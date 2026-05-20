@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Contractor Paperwork</string>
+    <string name="title_activity_main">Contractor Paperwork</string>
+    <string name="package_name">com.contractor.paperwork</string>
+    <string name="custom_url_scheme">com.contractor.paperwork</string>
+</resources>
