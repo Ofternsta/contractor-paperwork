@@ -1,35 +1,24 @@
 import { NextResponse } from 'next/server'
-
-export const maxDuration = 60
-import { createClient } from '@supabase/supabase-js'
 import { analyzeEvidence } from '@/lib/analyze-evidence'
 import { extractTextFromFile } from '@/lib/extract-text'
-import { validateUploadSize } from '@/lib/upload-limits'
 import {
   newEvidenceId,
   saveEvidence,
   uploadEvidenceFile,
 } from '@/lib/evidence-storage'
+import { requireAuth } from '@/lib/require-auth'
+import { validateUploadSize } from '@/lib/upload-limits'
+
+export const maxDuration = 60
 
 const BUCKET = 'project-files'
 
-function getServerClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url || !key) {
-    throw new Error(
-      'Server missing Supabase env vars. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY on Vercel.'
-    )
-  }
-  return createClient(url, key)
-}
-
 async function fileFromStorage(
+  supabase: Awaited<ReturnType<typeof requireAuth>>['supabase'],
   filePath: string,
   fileName: string,
   fileType: string
 ): Promise<File> {
-  const supabase = getServerClient()
   const { data, error } = await supabase.storage.from(BUCKET).download(filePath)
 
   if (error || !data) {
@@ -44,6 +33,11 @@ async function fileFromStorage(
 
 export async function POST(req: Request) {
   try {
+    const { supabase, user } = await requireAuth()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const contentType = req.headers.get('content-type') || ''
     let claimId: string | null = null
     let projectId: string | null = null
@@ -65,7 +59,7 @@ export async function POST(req: Request) {
         )
       }
 
-      file = await fileFromStorage(existingPath, fileName, fileType)
+      file = await fileFromStorage(supabase, existingPath, fileName, fileType)
     } else {
       const formData = await req.formData()
       file = formData.get('file') as File | null
@@ -87,12 +81,12 @@ export async function POST(req: Request) {
 
     const filePath =
       existingPath ||
-      (await uploadEvidenceFile(projectId, claimId, file)).filePath
+      (await uploadEvidenceFile(supabase, projectId, claimId, file)).filePath
 
     const text = await extractTextFromFile(file)
     const { evidenceType, summary } = await analyzeEvidence(file, text)
 
-    const evidence = await saveEvidence({
+    const evidence = await saveEvidence(supabase, {
       id: newEvidenceId(),
       claim_id: claimId,
       file_name: file.name,
@@ -105,8 +99,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ evidence })
   } catch (err: unknown) {
-    const message =
-      err instanceof Error ? err.message : 'Upload failed'
+    const message = err instanceof Error ? err.message : 'Upload failed'
     console.error('Upload error:', err)
     return NextResponse.json({ error: message }, { status: 500 })
   }

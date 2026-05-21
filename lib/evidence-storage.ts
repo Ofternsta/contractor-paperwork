@@ -1,4 +1,4 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export type EvidenceRecord = {
   id: string
@@ -13,22 +13,15 @@ export type EvidenceRecord = {
 
 const BUCKET = 'project-files'
 
-function getClient(): SupabaseClient {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
-
 function metaPath(filePath: string) {
   return `${filePath}.meta.json`
 }
 
 export async function listEvidence(
+  supabase: SupabaseClient,
   projectId: string,
   claimId: string
 ): Promise<EvidenceRecord[]> {
-  const supabase = getClient()
   const records: EvidenceRecord[] = []
 
   const prefixes = [`${projectId}/${claimId}`, `${projectId}`]
@@ -94,9 +87,9 @@ async function readMeta(
 }
 
 export async function saveEvidence(
+  supabase: SupabaseClient,
   record: EvidenceRecord
 ): Promise<EvidenceRecord> {
-  const supabase = getClient()
   const body = JSON.stringify(record, null, 2)
 
   const { error } = await supabase.storage
@@ -111,11 +104,11 @@ export async function saveEvidence(
 }
 
 export async function uploadEvidenceFile(
+  supabase: SupabaseClient,
   projectId: string,
   claimId: string,
   file: File
 ): Promise<{ filePath: string }> {
-  const supabase = getClient()
   const filePath = `${projectId}/${claimId}/${Date.now()}-${file.name}`
 
   const { error } = await supabase.storage.from(BUCKET).upload(filePath, file)
@@ -125,10 +118,9 @@ export async function uploadEvidenceFile(
 }
 
 export async function deleteEvidence(
+  supabase: SupabaseClient,
   filePath: string
 ): Promise<void> {
-  const supabase = getClient()
-
   const { error } = await supabase.storage
     .from(BUCKET)
     .remove([filePath, metaPath(filePath)])

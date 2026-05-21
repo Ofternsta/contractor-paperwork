@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server'
 import { deleteEvidence, listEvidence } from '@/lib/evidence-storage'
+import { requireAuth } from '@/lib/require-auth'
 
 export async function GET(req: Request) {
   try {
+    const { supabase, user } = await requireAuth()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const params = new URL(req.url).searchParams
     const claimId = params.get('claim_id')
     const projectId = params.get('project_id')
@@ -14,18 +20,22 @@ export async function GET(req: Request) {
       )
     }
 
-    const evidence = await listEvidence(projectId, claimId)
+    const evidence = await listEvidence(supabase, projectId, claimId)
     return NextResponse.json({ evidence })
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message || 'Failed to load evidence' },
-      { status: 500 }
-    )
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : 'Failed to load evidence'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
 
 export async function DELETE(req: Request) {
   try {
+    const { supabase, user } = await requireAuth()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const filePath = new URL(req.url).searchParams.get('file_path')
 
     if (!filePath) {
@@ -35,12 +45,11 @@ export async function DELETE(req: Request) {
       )
     }
 
-    await deleteEvidence(filePath)
+    await deleteEvidence(supabase, filePath)
     return NextResponse.json({ ok: true })
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message || 'Failed to delete evidence' },
-      { status: 500 }
-    )
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : 'Failed to delete evidence'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

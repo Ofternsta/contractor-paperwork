@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { AppHeader } from '@/components/app-header'
 import { deleteProject } from '@/lib/delete-project'
 import { supabase } from '@/lib/supabase'
@@ -14,12 +15,14 @@ type Project = {
 }
 
 export default function Home() {
+  const router = useRouter()
   const [customerName, setCustomerName] = useState('')
   const [projectAddress, setProjectAddress] = useState('')
   const [notes, setNotes] = useState('')
   const [projects, setProjects] = useState<Project[]>([])
   const [creating, setCreating] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [signingOut, setSigningOut] = useState(false)
 
   async function fetchProjects() {
     const { data, error } = await supabase.from('projects').select('*')
@@ -31,10 +34,28 @@ export default function Home() {
     setProjects((data || []) as Project[])
   }
 
+  async function signOut() {
+    setSigningOut(true)
+    await supabase.auth.signOut()
+    router.push('/login')
+    router.refresh()
+    setSigningOut(false)
+  }
+
   async function createProject() {
     if (!customerName.trim() || !projectAddress.trim()) return
 
     setCreating(true)
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      router.push('/login')
+      setCreating(false)
+      return
+    }
 
     const { data, error } = await supabase
       .from('projects')
@@ -43,6 +64,7 @@ export default function Home() {
           customer_name: customerName,
           project_address: projectAddress,
           notes,
+          user_id: user.id,
         },
       ])
       .select()
@@ -76,7 +98,7 @@ export default function Home() {
         await supabase.from('projects').delete().eq('id', project.id)
         alert(
           claimError?.message?.includes('permission denied')
-            ? 'Could not create project: database needs claim permissions. In Supabase SQL Editor, run supabase/anon-app-permissions.sql, then try again.'
+            ? 'Could not create project: run supabase/auth-setup.sql in the Supabase SQL Editor, then try again.'
             : `Could not create project: ${claimError?.message || 'claim was not saved'}`
         )
         setCreating(false)
@@ -116,6 +138,8 @@ export default function Home() {
       <AppHeader
         title="Contractor Paperwork"
         subtitle="Projects & claim evidence in the field"
+        onSignOut={signOut}
+        signingOut={signingOut}
       />
 
       <main className="flex-1 safe-x px-4 py-4 max-w-lg mx-auto w-full pb-8 safe-bottom space-y-6">

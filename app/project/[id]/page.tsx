@@ -77,6 +77,11 @@ export default function ProjectPageClient() {
     )
     const payload = await res.json().catch(() => ({}))
 
+    if (res.status === 401) {
+      window.location.href = '/login'
+      return
+    }
+
     if (!res.ok) {
       setConfigError(payload.error || 'Failed to load evidence')
       setDocuments([])
@@ -112,6 +117,10 @@ export default function ProjectPageClient() {
       )
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Upload failed'
+      if (message.toLowerCase().includes('jwt') || message.includes('401')) {
+        window.location.href = '/login'
+        return
+      }
       setUploadMessage(message)
     }
 
@@ -127,6 +136,11 @@ export default function ProjectPageClient() {
     )
 
     const payload = await res.json().catch(() => ({}))
+
+    if (res.status === 401) {
+      window.location.href = '/login'
+      return
+    }
 
     if (!res.ok) {
       setConfigError(payload.error || 'Failed to delete file')
