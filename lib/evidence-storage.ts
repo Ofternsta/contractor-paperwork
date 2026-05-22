@@ -8,6 +8,7 @@ export type EvidenceRecord = {
   file_type: string
   evidence_type: string
   summary: string
+  extracted_text?: string
   created_at: string
 }
 

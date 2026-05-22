@@ -3,8 +3,13 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { AdminTeamPanel } from '@/components/admin-team-panel'
 import { AppHeader } from '@/components/app-header'
+import { AppNav } from '@/components/app-nav'
+import { linkClientAccessByEmail } from '@/lib/auth-signup'
 import { deleteProject } from '@/lib/delete-project'
+import { loadUserAccess } from '@/lib/load-access'
+import type { UserAccess } from '@/lib/roles'
 import { supabase } from '@/lib/supabase'
 
 type Project = {
@@ -16,6 +21,8 @@ type Project = {
 
 export default function Home() {
   const router = useRouter()
+  const [access, setAccess] = useState<UserAccess | null>(null)
+  const [accessLoading, setAccessLoading] = useState(true)
   const [customerName, setCustomerName] = useState('')
   const [projectAddress, setProjectAddress] = useState('')
   const [notes, setNotes] = useState('')
@@ -23,6 +30,14 @@ export default function Home() {
   const [creating, setCreating] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [signingOut, setSigningOut] = useState(false)
+
+  async function refreshAccess() {
+    await linkClientAccessByEmail()
+    const { access: a } = await loadUserAccess()
+    setAccess(a)
+    setAccessLoading(false)
+    return a
+  }
 
   async function fetchProjects() {
     const { data, error } = await supabase.from('projects').select('*')
@@ -43,7 +58,8 @@ export default function Home() {
   }
 
   async function createProject() {
-    if (!customerName.trim() || !projectAddress.trim()) return
+    if (!customerName.trim() || !projectAddress.trim() || !access) return
+    if (!access.canCreateProject || !access.organizationId) return
 
     setCreating(true)
 
@@ -65,6 +81,7 @@ export default function Home() {
           project_address: projectAddress,
           notes,
           user_id: user.id,
+          organization_id: access.organizationId,
         },
       ])
       .select()
@@ -98,7 +115,7 @@ export default function Home() {
         await supabase.from('projects').delete().eq('id', project.id)
         alert(
           claimError?.message?.includes('permission denied')
-            ? 'Could not create project: run supabase/auth-setup.sql in the Supabase SQL Editor, then try again.'
+            ? 'Could not create project: run supabase/roles-and-orgs.sql in Supabase SQL Editor.'
             : `Could not create project: ${claimError?.message || 'claim was not saved'}`
         )
         setCreating(false)
@@ -130,59 +147,142 @@ export default function Home() {
   }
 
   useEffect(() => {
-    fetchProjects()
+    refreshAccess().then((a) => {
+      if (a && (a.role !== 'worker' || a.workerStatus === 'approved')) {
+        fetchProjects()
+      }
+      if (a?.role === 'client') {
+        fetchProjects()
+      }
+    })
   }, [])
+
+  if (accessLoading) {
+    return (
+      <div className="min-h-dvh flex items-center justify-center">
+        <p className="text-gray-600">Loading…</p>
+      </div>
+    )
+  }
+
+  if (!access) {
+    return null
+  }
+
+  const roleLabel =
+    access.role === 'admin'
+      ? 'Admin'
+      : access.role === 'worker'
+        ? 'Worker'
+        : 'Client'
+
+  if (access.role === 'worker' && access.workerStatus === 'pending') {
+    return (
+      <div className="min-h-dvh flex flex-col">
+        <AppHeader
+          title="Awaiting approval"
+          subtitle={`${access.organizationName || 'Organization'} — worker account`}
+          onSignOut={signOut}
+          signingOut={signingOut}
+        />
+        <main className="flex-1 safe-x px-4 py-8 max-w-lg mx-auto text-center space-y-4">
+          <p className="text-gray-600 leading-relaxed">
+            Your admin must approve you <strong>one time</strong> before you
+            can view or add to projects. Ask them to open the app and tap
+            Approve on your request.
+          </p>
+          <button
+            type="button"
+            onClick={() => refreshAccess().then(() => fetchProjects())}
+            className="bg-black text-white px-6 py-3 rounded-xl font-medium min-h-[48px]"
+          >
+            Check again
+          </button>
+        </main>
+      </div>
+    )
+  }
+
+  if (access.role === 'worker' && access.workerStatus === 'none') {
+    return (
+      <div className="min-h-dvh flex flex-col">
+        <AppHeader title="No organization" onSignOut={signOut} signingOut={signingOut} />
+        <main className="flex-1 safe-x px-4 py-8 max-w-lg mx-auto text-center">
+          <p className="text-gray-600">
+            Sign up again with a valid organization invite code from your admin.
+          </p>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-dvh flex flex-col">
       <AppHeader
         title="Contractor Paperwork"
-        subtitle="Projects & claim evidence in the field"
+        subtitle={`${roleLabel}${access.organizationName ? ` · ${access.organizationName}` : ''}`}
         onSignOut={signOut}
         signingOut={signingOut}
       />
 
       <main className="flex-1 safe-x px-4 py-4 max-w-lg mx-auto w-full pb-8 safe-bottom space-y-6">
-        <section className="border border-gray-200 rounded-xl p-4 bg-gray-50 space-y-3">
-          <h2 className="font-bold text-lg">New project</h2>
+        <AppNav access={access} />
+        {access.canManageTeam && <AdminTeamPanel />}
 
-          <input
-            className="border border-gray-300 rounded-xl p-3 w-full"
-            placeholder="Customer name"
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-          />
+        {access.canCreateProject && (
+          <section className="border border-gray-200 rounded-xl p-4 bg-gray-50 space-y-3">
+            <h2 className="font-bold text-lg">New project</h2>
 
-          <input
-            className="border border-gray-300 rounded-xl p-3 w-full"
-            placeholder="Project address"
-            value={projectAddress}
-            onChange={(e) => setProjectAddress(e.target.value)}
-          />
+            <input
+              className="border border-gray-300 rounded-xl p-3 w-full"
+              placeholder="Customer name"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+            />
 
-          <textarea
-            className="border border-gray-300 rounded-xl p-3 w-full min-h-[88px]"
-            placeholder="Notes (optional)"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
+            <input
+              className="border border-gray-300 rounded-xl p-3 w-full"
+              placeholder="Project address"
+              value={projectAddress}
+              onChange={(e) => setProjectAddress(e.target.value)}
+            />
 
-          <button
-            type="button"
-            onClick={createProject}
-            disabled={creating || !customerName.trim() || !projectAddress.trim()}
-            className="w-full bg-black text-white py-4 rounded-xl font-medium disabled:opacity-50 min-h-[52px] active:scale-[0.98] transition-transform"
-          >
-            {creating ? 'Creating…' : 'Create Project'}
-          </button>
-        </section>
+            <textarea
+              className="border border-gray-300 rounded-xl p-3 w-full min-h-[88px]"
+              placeholder="Notes (optional)"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+
+            <button
+              type="button"
+              onClick={createProject}
+              disabled={
+                creating || !customerName.trim() || !projectAddress.trim()
+              }
+              className="w-full bg-black text-white py-4 rounded-xl font-medium disabled:opacity-50 min-h-[52px]"
+            >
+              {creating ? 'Creating…' : 'Create Project'}
+            </button>
+          </section>
+        )}
+
+        {access.role === 'client' && (
+          <p className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded-xl p-3">
+            You can only open projects your contractor has granted to your email.
+          </p>
+        )}
 
         <section>
-          <h2 className="font-bold text-lg mb-3">Your projects</h2>
+          <h2 className="font-bold text-lg mb-3">
+            {access.role === 'client' ? 'Shared with you' : 'Your projects'}
+          </h2>
 
           {projects.length === 0 && (
             <p className="text-gray-500 text-center py-6">
-              No projects yet. Create one above.
+              {access.role === 'client'
+                ? 'No projects shared with you yet. Ask your contractor admin to grant access using your signup email.'
+                : 'No projects yet. Create one above.'}
             </p>
           )}
 
@@ -197,26 +297,24 @@ export default function Home() {
                   className="block p-4 active:bg-gray-50 min-h-[64px]"
                 >
                   <p className="font-bold text-lg">{p.customer_name}</p>
-                  <p className="text-sm text-gray-600 mt-1">{p.project_address}</p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {p.project_address}
+                  </p>
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => removeProject(p)}
-                  disabled={deletingId === p.id}
-                  className="w-full border-t border-red-100 py-3 text-red-700 text-sm font-semibold disabled:opacity-50 min-h-[48px] active:bg-red-50"
-                  aria-label={`Delete ${p.customer_name}`}
-                >
-                  {deletingId === p.id ? 'Deleting…' : 'Delete project'}
-                </button>
+                {access.canDeleteProject && (
+                  <button
+                    type="button"
+                    onClick={() => removeProject(p)}
+                    disabled={deletingId === p.id}
+                    className="w-full border-t border-red-100 py-3 text-red-700 text-sm font-semibold disabled:opacity-50 min-h-[48px] active:bg-red-50"
+                  >
+                    {deletingId === p.id ? 'Deleting…' : 'Delete project'}
+                  </button>
+                )}
               </li>
             ))}
           </ul>
         </section>
-
-        <p className="text-xs text-gray-500 text-center leading-relaxed px-2">
-          Native App Store build: deploy to Vercel, set CAPACITOR_SERVER_URL, then
-          run npm run cap:android or cap:ios. See MOBILE.md.
-        </p>
       </main>
     </div>
   )

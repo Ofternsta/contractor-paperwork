@@ -1,4 +1,5 @@
 import 'server-only'
+import { ocrImageFromBuffer } from '@/lib/ocr'
 
 const TEXT_EXTENSIONS = new Set([
   '.txt',
@@ -36,6 +37,12 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
 export async function extractTextFromFile(file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer())
   const ext = extension(file.name)
+
+  if (file.type.startsWith('image/') || /\.(jpe?g|png|gif|webp|heic|bmp)$/i.test(file.name)) {
+    const ocr = await ocrImageFromBuffer(buffer, file.type || 'image/jpeg', file.name)
+    if (ocr) return truncate(ocr)
+    return ''
+  }
 
   if (ext === '.docx' || file.type.includes('wordprocessingml')) {
     try {

@@ -3,10 +3,16 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { AppHeader } from '@/components/app-header'
+import { EvidenceCard } from '@/components/evidence-card'
+import { ClaimAiPanel } from '@/components/claim-ai-panel'
+import { ClientPortalPanel } from '@/components/client-portal-panel'
 import { EvidenceUpload } from '@/components/evidence-upload'
+import { ProjectClientPanel } from '@/components/project-client-panel'
 import { EVIDENCE_TYPES } from '@/lib/evidence-types'
+import { loadUserAccess } from '@/lib/load-access'
+import type { UserAccess } from '@/lib/roles'
 import { supabase } from '@/lib/supabase'
-import { uploadEvidenceClient } from '@/lib/upload-evidence-client'
+import { uploadEvidenceWithAi } from '@/lib/upload-evidence-server'
 import { validateUploadSize } from '@/lib/upload-limits'
 
 type Claim = {
@@ -24,12 +30,14 @@ type Evidence = {
   file_type: string
   evidence_type: string
   summary: string
+  extracted_text?: string
   created_at?: string
 }
 
 export default function ProjectPageClient() {
   const params = useParams()
   const id = params.id as string
+  const [access, setAccess] = useState<UserAccess | null>(null)
   const [claims, setClaims] = useState<Claim[]>([])
   const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null)
   const [documents, setDocuments] = useState<Evidence[]>([])
@@ -39,6 +47,10 @@ export default function ProjectPageClient() {
   const [configError, setConfigError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('All')
+
+  useEffect(() => {
+    loadUserAccess().then(({ access: a }) => setAccess(a))
+  }, [])
 
   async function fetchClaims() {
     setLoading(true)
@@ -92,7 +104,7 @@ export default function ProjectPageClient() {
   }
 
   async function uploadFile(file: File) {
-    if (!selectedClaim) return
+    if (!selectedClaim || !access?.canUploadEvidence) return
 
     const sizeError = validateUploadSize(file.size)
     if (sizeError) {
@@ -105,11 +117,7 @@ export default function ProjectPageClient() {
     setConfigError(null)
 
     try {
-      const evidence = await uploadEvidenceClient(
-        id,
-        selectedClaim.id,
-        file
-      )
+      const evidence = await uploadEvidenceWithAi(id, selectedClaim.id, file)
 
       await fetchEvidence(selectedClaim.id)
       setUploadMessage(
@@ -127,7 +135,35 @@ export default function ProjectPageClient() {
     setUploading(false)
   }
 
+  async function uploadMany(files: File[]) {
+    if (!selectedClaim || !access?.canUploadEvidence) return
+    setUploading(true)
+    setUploadMessage(null)
+    let ok = 0
+    for (const file of files) {
+      const sizeError = validateUploadSize(file.size)
+      if (sizeError) {
+        setUploadMessage(sizeError)
+        break
+      }
+      try {
+        await uploadEvidenceWithAi(id, selectedClaim.id, file)
+        ok++
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Upload failed'
+        setUploadMessage(message)
+        break
+      }
+    }
+    await fetchEvidence(selectedClaim.id)
+    if (ok > 0) {
+      setUploadMessage(`Uploaded ${ok} file(s) with AI analysis`)
+    }
+    setUploading(false)
+  }
+
   async function deleteFile(filePath: string) {
+    if (!access?.canDeleteEvidence) return
     setConfigError(null)
 
     const res = await fetch(
@@ -174,7 +210,7 @@ export default function ProjectPageClient() {
     }
   }, [selectedClaim?.id])
 
-  if (loading) {
+  if (loading || !access) {
     return (
       <div className="min-h-dvh flex items-center justify-center safe-x">
         <p className="text-gray-600">Loading project…</p>
@@ -185,20 +221,40 @@ export default function ProjectPageClient() {
   if (!claims.length) {
     return (
       <div className="min-h-dvh">
-        <AppHeader title="No Claims" backHref="/" backLabel="Projects" />
+        <AppHeader title="No access" backHref="/" backLabel="Projects" />
         <div className="safe-x px-4 py-6 max-w-5xl mx-auto">
           <p className="text-gray-600">
-            Create a claim from the home page first.
+            You do not have access to this project, or it has no claims yet.
           </p>
         </div>
       </div>
     )
   }
 
+  const activeClaim = selectedClaim ?? claims[0]
+  if (!activeClaim) {
+    return (
+      <div className="min-h-dvh">
+        <AppHeader title="No access" backHref="/" backLabel="Projects" />
+        <div className="safe-x px-4 py-6 max-w-5xl mx-auto">
+          <p className="text-gray-600">No claim selected for this project.</p>
+        </div>
+      </div>
+    )
+  }
+
+  const q = search.toLowerCase().trim()
   const filtered = documents.filter((doc) => {
-    const matchesSearch = doc.file_name
-      ?.toLowerCase()
-      .includes(search.toLowerCase())
+    const haystack = [
+      doc.file_name,
+      doc.summary,
+      doc.evidence_type,
+      doc.extracted_text,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+    const matchesSearch = !q || haystack.includes(q)
     const matchesType =
       filterType === 'All' || doc.evidence_type === filterType
     return matchesSearch && matchesType
@@ -214,6 +270,16 @@ export default function ProjectPageClient() {
       />
 
       <main className="flex-1 safe-x px-4 py-4 max-w-5xl mx-auto w-full pb-8 safe-bottom space-y-4">
+        {access.role === 'client' && (
+          <p className="text-sm text-blue-800 bg-blue-50 border border-blue-100 rounded-xl p-3">
+            View only — you cannot upload or edit files on this project.
+          </p>
+        )}
+
+        {access.canManageProjectClients && (
+          <ProjectClientPanel projectId={id} />
+        )}
+
         <label className="block lg:hidden">
           <span className="text-sm font-medium text-gray-700 mb-1 block">
             Active claim
@@ -261,16 +327,32 @@ export default function ProjectPageClient() {
               </p>
             )}
 
-            <EvidenceUpload
-              uploading={uploading}
-              uploadMessage={uploadMessage}
-              onUpload={uploadFile}
+            <ClaimAiPanel
+              claimId={activeClaim.id}
+              projectId={id}
+              canGenerate={access.canUpdateClaimInfo}
             />
+
+            {access.canViewClientPortal && (
+              <ClientPortalPanel
+                projectId={id}
+                canApprove={access.canApproveDocuments}
+              />
+            )}
+
+            {access.canUploadEvidence && (
+              <EvidenceUpload
+                uploading={uploading}
+                uploadMessage={uploadMessage}
+                onUpload={uploadFile}
+                onUploadMany={uploadMany}
+              />
+            )}
 
             <div className="flex flex-col sm:flex-row gap-3">
               <input
                 className="border border-gray-300 rounded-xl p-3 flex-1 w-full"
-                placeholder="Search files…"
+                placeholder="Search files, summaries, OCR text…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -294,31 +376,15 @@ export default function ProjectPageClient() {
               )}
 
               {filtered.map((doc) => (
-                <article
+                <EvidenceCard
                   key={doc.id}
-                  className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm"
-                >
-                  <span className="inline-block text-xs font-semibold bg-gray-100 text-gray-800 px-2 py-1 rounded-full mb-2">
-                    {doc.evidence_type}
-                  </span>
-                  <button
-                    type="button"
-                    className="block font-medium text-blue-700 text-left w-full py-1 min-h-[44px]"
-                    onClick={() => openFile(doc.file_path)}
-                  >
-                    {doc.file_name}
-                  </button>
-                  <p className="text-sm text-gray-600 mt-2 leading-relaxed line-clamp-4">
-                    {doc.summary}
-                  </p>
-                  <button
-                    type="button"
-                    className="text-red-600 font-medium mt-3 min-h-[44px]"
-                    onClick={() => deleteFile(doc.file_path)}
-                  >
-                    Delete
-                  </button>
-                </article>
+                  doc={doc}
+                  canEdit={access.canEditEvidenceSummary}
+                  canDelete={access.canDeleteEvidence}
+                  onOpen={openFile}
+                  onDelete={deleteFile}
+                  onUpdated={() => fetchEvidence(activeClaim.id)}
+                />
               ))}
             </div>
           </div>

@@ -83,8 +83,8 @@ export async function POST(req: Request) {
       existingPath ||
       (await uploadEvidenceFile(supabase, projectId, claimId, file)).filePath
 
-    const text = await extractTextFromFile(file)
-    const { evidenceType, summary } = await analyzeEvidence(file, text)
+    const extractedText = await extractTextFromFile(file)
+    const { evidenceType, summary } = await analyzeEvidence(file, extractedText)
 
     const evidence = await saveEvidence(supabase, {
       id: newEvidenceId(),
@@ -94,6 +94,7 @@ export async function POST(req: Request) {
       file_type: file.type,
       evidence_type: evidenceType,
       summary,
+      extracted_text: extractedText || undefined,
       created_at: new Date().toISOString(),
     })
 
