@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 export async function loadUserAccess(): Promise<{
   userId: string | null
   access: UserAccess | null
+  needsProfileSetup?: boolean
 }> {
   const {
     data: { user },
@@ -11,13 +12,21 @@ export async function loadUserAccess(): Promise<{
 
   if (!user) return { userId: null, access: null }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .maybeSingle()
 
-  const role = (profile?.role as AppRole) || 'client'
+  if (profileError) {
+    console.error('Profile load error:', profileError)
+  }
+
+  if (!profile?.role) {
+    return { userId: user.id, access: null, needsProfileSetup: true }
+  }
+
+  const role = profile.role as AppRole
   let organizationId: string | null = null
   let organizationName: string | null = null
   let inviteCode: string | null = null

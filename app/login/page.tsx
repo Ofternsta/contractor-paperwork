@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { completeSignupProfile, linkClientAccessByEmail } from '@/lib/auth-signup'
+import { linkClientAccessByEmail } from '@/lib/auth-signup'
 import {
   INVITE_CODE_LENGTH,
   isProceduralInviteFormat,
@@ -102,6 +102,16 @@ export default function LoginPage() {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
+        options: {
+          data: {
+            role,
+            full_name: fullName.trim() || null,
+            organization_name:
+              role === 'admin' ? organizationName.trim() || null : null,
+            invite_code:
+              role === 'worker' ? normalizeInviteCode(inviteCode) : null,
+          },
+        },
       })
 
       if (error) {
@@ -110,26 +120,31 @@ export default function LoginPage() {
         return
       }
 
-      const userId = data.user?.id
-      if (!userId) {
+      const session = data.session
+
+      if (!session) {
         setMessage(
-          'Account created. If email confirmation is enabled, confirm your email, then sign in.'
+          `Account created as ${role}. Confirm your email if required, then sign in — your ${role} profile will be set up automatically.`
         )
         setMode('signin')
         setLoading(false)
         return
       }
 
-      const profileError = await completeSignupProfile({
-        userId,
-        role,
-        fullName,
-        organizationName,
-        inviteCode,
+      const setupRes = await fetch('/api/auth/complete-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          role,
+          full_name: fullName,
+          organization_name: organizationName,
+          invite_code: normalizeInviteCode(inviteCode),
+        }),
       })
+      const setupPayload = await setupRes.json().catch(() => ({}))
 
-      if (profileError) {
-        setMessage(profileError)
+      if (!setupRes.ok) {
+        setMessage(setupPayload.error || 'Account created but setup failed.')
         setLoading(false)
         return
       }
@@ -138,21 +153,14 @@ export default function LoginPage() {
         setMessage(
           'Worker account created. Your admin must approve you once before you can view projects.'
         )
-        setMode('signin')
-        setLoading(false)
-        return
-      }
-
-      if (role === 'client') {
+      } else if (role === 'client') {
         setMessage(
           'Client account created. Your contractor admin must grant you access to each project (by your email).'
         )
-        setMode('signin')
-        setLoading(false)
-        return
+      } else {
+        setMessage('Admin account created. You can sign in now.')
       }
 
-      setMessage('Admin account created. You can sign in now.')
       setMode('signin')
       setLoading(false)
       return
@@ -165,6 +173,22 @@ export default function LoginPage() {
 
     if (error) {
       setMessage(error.message)
+      setLoading(false)
+      return
+    }
+
+    const setupRes = await fetch('/api/auth/complete-signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    })
+    const setupPayload = await setupRes.json().catch(() => ({}))
+
+    if (!setupRes.ok) {
+      setMessage(
+        setupPayload.error ||
+          'Signed in but profile setup failed. Try signing up again or contact support.'
+      )
       setLoading(false)
       return
     }

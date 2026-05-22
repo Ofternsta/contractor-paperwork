@@ -34,7 +34,28 @@ export default function Home() {
 
   async function refreshAccess() {
     await linkClientAccessByEmail()
-    const { access: a } = await loadUserAccess()
+    let { access: a, needsProfileSetup } = await loadUserAccess()
+
+    if (needsProfileSetup) {
+      const res = await fetch('/api/auth/complete-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      if (res.ok) {
+        await linkClientAccessByEmail()
+        const retry = await loadUserAccess()
+        a = retry.access
+        needsProfileSetup = retry.needsProfileSetup
+      }
+    }
+
+    if (needsProfileSetup && !a) {
+      router.push('/login')
+      setAccessLoading(false)
+      return null
+    }
+
     setAccess(a)
     setAccessLoading(false)
     return a
@@ -275,9 +296,14 @@ export default function Home() {
         )}
 
         {access.role === 'client' && (
-          <p className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded-xl p-3">
-            You can only open projects your contractor has granted to your email.
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded-xl p-3">
+              You can only open projects your contractor has granted to your email.
+            </p>
+            <BecomeAdminPanel
+              onSuccess={() => refreshAccess().then(() => fetchProjects())}
+            />
+          </div>
         )}
 
         <section>

@@ -19,12 +19,6 @@ export async function convertWorkerToAdmin(
     return { error: 'Profile not found. Sign out and sign in again.' }
   }
 
-  if (profile.role === 'client') {
-    return {
-      error: 'Client accounts cannot become admin. Sign up again with an admin account.',
-    }
-  }
-
   const { data: existingOrg } = await supabase
     .from('organizations')
     .select('id')
