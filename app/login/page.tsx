@@ -11,7 +11,11 @@ import {
 } from '@/lib/invite-code'
 import type { AppRole } from '@/lib/roles'
 import { supabase } from '@/lib/supabase'
-import { finishAccountSetup, getAccountSetupStatus } from './actions'
+import {
+  finishAccountSetup,
+  getAccountSetupStatus,
+  resendVerificationEmail,
+} from './actions'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -29,6 +33,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [finishingAccount, setFinishingAccount] = useState(false)
+  const [needsVerification, setNeedsVerification] = useState(false)
+  const [resendingEmail, setResendingEmail] = useState(false)
 
   const runFinishSignup = useCallback(async (targetEmail: string) => {
     const normalized = targetEmail.trim().toLowerCase()
@@ -42,9 +48,17 @@ export default function LoginPage() {
       const status = await getAccountSetupStatus(normalized)
 
       if (status.accountReady) {
+        setNeedsVerification(false)
         setMessage(
-          `Your account is ready. Sign in as ${normalized} with the password you chose at signup (before Stripe).`
+          `Email verified. Sign in as ${normalized} with your signup password.`
         )
+        setFinishingAccount(false)
+        return
+      }
+
+      if ('needsEmailVerification' in status && status.needsEmailVerification) {
+        setNeedsVerification(true)
+        setMessage(status.message)
         setFinishingAccount(false)
         return
       }
@@ -52,9 +66,17 @@ export default function LoginPage() {
       const finish = await finishAccountSetup(normalized)
 
       if (finish.accountReady) {
+        setNeedsVerification(false)
         setMessage(
-          `Your account is ready. Sign in as ${normalized} with the password you chose at signup (before Stripe).`
+          `Email verified. Sign in as ${normalized} with your signup password.`
         )
+        setFinishingAccount(false)
+        return
+      }
+
+      if ('needsEmailVerification' in finish && finish.needsEmailVerification) {
+        setNeedsVerification(true)
+        setMessage(finish.message)
         setFinishingAccount(false)
         return
       }
@@ -106,7 +128,37 @@ export default function LoginPage() {
       setMode('signup')
       setRole('admin')
     }
+
+    if (params.get('verify') === '1') {
+      const verifyEmail = params.get('email')?.trim().toLowerCase()
+      if (verifyEmail) setEmail(verifyEmail)
+      setNeedsVerification(true)
+      setMode('signin')
+      setMessage(
+        params.get('verified') === '1'
+          ? 'Email verified. You can sign in now.'
+          : 'Verify your email before signing in. Check your inbox for the confirmation link.'
+      )
+    }
   }, [runFinishSignup])
+
+  async function handleResendVerification() {
+    const target = email.trim().toLowerCase()
+    if (!target) {
+      setMessage('Enter your email address first.')
+      return
+    }
+    setResendingEmail(true)
+    setMessage(null)
+    const result = await resendVerificationEmail(target)
+    setResendingEmail(false)
+    if (!result.ok) {
+      setMessage(result.error || 'Could not send verification email')
+      return
+    }
+    setNeedsVerification(true)
+    setMessage('Verification email sent. Open the link in your inbox, then sign in.')
+  }
 
   const verifyInvite = useCallback(async (raw: string) => {
     const code = normalizeInviteCode(raw)
@@ -192,10 +244,13 @@ export default function LoginPage() {
         return
       }
 
+      const appOrigin =
+        typeof window !== 'undefined' ? window.location.origin : ''
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
+          emailRedirectTo: `${appOrigin}/auth/callback?next=${encodeURIComponent('/login?verified=1')}`,
           data: {
             role,
             full_name: fullName.trim() || null,
@@ -215,8 +270,9 @@ export default function LoginPage() {
       const session = data.session
 
       if (!session) {
+        setNeedsVerification(true)
         setMessage(
-          `Account created as ${role}. Confirm your email if required, then sign in — your ${role} profile will be set up automatically.`
+          `Account created. Check your email and verify your address before signing in — your ${role} profile will be set up after verification.`
         )
         setMode('signin')
         setLoading(false)
@@ -281,10 +337,33 @@ export default function LoginPage() {
     }
 
     if (error) {
+      const lower = error.message.toLowerCase()
+      if (lower.includes('email not confirmed') || lower.includes('not confirmed')) {
+        setNeedsVerification(true)
+        setMessage(
+          'Verify your email before signing in. Check your inbox for the confirmation link.'
+        )
+        setLoading(false)
+        return
+      }
       setMessage(
         error.message.includes('Invalid login')
-          ? `${error.message} If you just paid, wait for “account is ready” above, then use the same password you chose at signup.`
+          ? `${error.message} If you just paid, finish setup above, verify your email, then sign in.`
           : error.message
+      )
+      setLoading(false)
+      return
+    }
+
+    const {
+      data: { user: signedInUser },
+    } = await supabase.auth.getUser()
+
+    if (signedInUser && !signedInUser.email_confirmed_at) {
+      await supabase.auth.signOut()
+      setNeedsVerification(true)
+      setMessage(
+        'Verify your email before signing in. Check your inbox for the confirmation link.'
       )
       setLoading(false)
       return
@@ -546,14 +625,27 @@ export default function LoginPage() {
             <p
               className={`text-sm leading-relaxed ${
                 message.includes('ready') ||
+                message.includes('verified') ||
                 message.includes('created') ||
-                message.includes('approval')
+                message.includes('approval') ||
+                message.includes('sent')
                   ? 'text-green-800 bg-green-50 border border-green-100 rounded-lg p-3'
                   : 'text-red-700 bg-red-50 border border-red-100 rounded-lg p-3'
               }`}
             >
               {message}
             </p>
+          )}
+
+          {needsVerification && mode === 'signin' && (
+            <button
+              type="button"
+              disabled={resendingEmail || !email.trim()}
+              onClick={handleResendVerification}
+              className="w-full border border-gray-300 text-gray-900 py-3 rounded-xl font-medium disabled:opacity-50 min-h-[48px]"
+            >
+              {resendingEmail ? 'Sending…' : 'Resend verification email'}
+            </button>
           )}
 
           <button

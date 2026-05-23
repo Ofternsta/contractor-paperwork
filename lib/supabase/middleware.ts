@@ -46,7 +46,17 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (user && pathname === '/login') {
+  const emailConfirmed = Boolean(user?.email_confirmed_at)
+
+  if (user && !emailConfirmed && !isAuthRoute && !isPublicApi && !isPublicOnboarding) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.searchParams.set('verify', '1')
+    if (user.email) url.searchParams.set('email', user.email)
+    return NextResponse.redirect(url)
+  }
+
+  if (user && emailConfirmed && pathname === '/login') {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)

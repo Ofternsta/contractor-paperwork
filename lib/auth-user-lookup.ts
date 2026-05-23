@@ -43,3 +43,17 @@ export async function getAuthUserIdByEmail(
 export async function authUserExistsByEmail(email: string): Promise<boolean> {
   return Boolean(await getAuthUserIdByEmail(email))
 }
+
+export async function getAuthUserSummaryByEmail(email: string) {
+  const userId = await getAuthUserIdByEmail(email)
+  if (!userId) return null
+
+  const service = createServiceClient()
+  const { data, error } = await service.auth.admin.getUserById(userId)
+  if (error || !data.user) return null
+
+  return {
+    id: data.user.id,
+    emailConfirmed: Boolean(data.user.email_confirmed_at),
+  }
+}

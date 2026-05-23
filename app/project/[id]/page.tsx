@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation'
 import { AppHeader } from '@/components/app-header'
 import { EvidenceCard } from '@/components/evidence-card'
 import { ClaimAiPanel } from '@/components/claim-ai-panel'
+import { ClaimStatusWorkflow } from '@/components/claim-status-workflow'
+import type { ClaimStatus } from '@/lib/claim-status'
 import { ClientPortalPanel } from '@/components/client-portal-panel'
 import { EvidenceUpload } from '@/components/evidence-upload'
 import { MessagePanel } from '@/components/message-panel'
@@ -331,6 +333,23 @@ export default function ProjectPageClient() {
                 {configError}
               </p>
             )}
+
+            <ClaimStatusWorkflow
+              claimId={activeClaim.id}
+              projectId={id}
+              status={activeClaim.status}
+              canEdit={access.canUpdateClaimInfo}
+              onStatusChange={(next: ClaimStatus) => {
+                setClaims((prev) =>
+                  prev.map((c) =>
+                    c.id === activeClaim.id ? { ...c, status: next } : c
+                  )
+                )
+                setSelectedClaim((c) =>
+                  c?.id === activeClaim.id ? { ...c, status: next } : c
+                )
+              }}
+            />
 
             <ClaimAiPanel
               claimId={activeClaim.id}

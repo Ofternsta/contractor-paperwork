@@ -19,6 +19,8 @@ import {
   isStripeConfigured,
   stripePriceIds,
 } from '@/lib/stripe-config'
+import { sendSignupConfirmationEmail } from '@/lib/auth-email'
+import { getAuthUserIdByEmail } from '@/lib/auth-user-lookup'
 import { createServiceClient } from '@/lib/supabase/service'
 
 export type RegisterAdminInput = {
@@ -241,12 +243,51 @@ export async function fulfillPendingAdminSignup(
     throw new Error(block.reason || 'Trial not available')
   }
 
-  if (await authUserExists(service, email)) {
+  const existingUserId = await getAuthUserIdByEmail(email)
+  if (existingUserId) {
+    const profileResult = await ensureUserProfile(
+      service,
+      existingUserId,
+      {
+        role: 'admin',
+        full_name: pending.full_name ?? undefined,
+        organization_name: pending.organization_name,
+      },
+      {
+        role: 'admin',
+        organizationName: pending.organization_name,
+      }
+    )
+
+    if (profileResult.error) {
+      throw new Error(profileResult.error)
+    }
+
+    if (profileResult.organizationId) {
+      const { error: subError } = await service.from('subscriptions').upsert(
+        {
+          organization_id: profileResult.organizationId,
+          plan,
+          status: isTrial ? 'trialing' : 'active',
+          trial_ends_at: isTrial ? await registerEmailTrial(email) : null,
+          stripe_customer_id: options.stripeCustomerId ?? null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'organization_id' }
+      )
+      if (subError) throw new Error(subError.message)
+    }
+
     await service
       .from('pending_admin_signups')
-      .update({ consumed_at: new Date().toISOString() })
+      .update({
+        consumed_at: new Date().toISOString(),
+        password_encrypted: '',
+      })
       .eq('id', pendingSignupId)
-    return { alreadyConsumed: true as const }
+
+    await sendSignupConfirmationEmail(email)
+    return { ok: true as const, organizationId: profileResult.organizationId, plan }
   }
 
   if (!pending.password_encrypted?.trim()) {
@@ -269,7 +310,7 @@ export async function fulfillPendingAdminSignup(
     await service.auth.admin.createUser({
       email,
       password,
-      email_confirm: true,
+      email_confirm: false,
       user_metadata: {
         role: 'admin',
         full_name: pending.full_name,
@@ -339,6 +380,8 @@ export async function fulfillPendingAdminSignup(
       password_encrypted: '',
     })
     .eq('id', pendingSignupId)
+
+  await sendSignupConfirmationEmail(email)
 
   return { ok: true as const, organizationId: profileResult.organizationId, plan }
 }

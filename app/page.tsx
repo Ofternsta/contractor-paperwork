@@ -144,10 +144,10 @@ export default function Home() {
             project_id: project.id,
             client_name: customerName,
             property_address: projectAddress,
-            loss_type: 'Inspection',
+            loss_type: 'Property',
             insurance_company: 'Unknown',
             claim_number: `AUTO-${Date.now()}`,
-            status: 'Inspection',
+            status: 'Inspection' as const,
             notes: 'Auto claim',
           },
         ])

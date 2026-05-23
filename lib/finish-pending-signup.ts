@@ -1,7 +1,11 @@
 import 'server-only'
 
 import Stripe from 'stripe'
-import { authUserExistsByEmail } from '@/lib/auth-user-lookup'
+import {
+  authUserExistsByEmail,
+  getAuthUserSummaryByEmail,
+} from '@/lib/auth-user-lookup'
+import { sendSignupConfirmationEmail } from '@/lib/auth-email'
 import { normalizeSignupEmail } from '@/lib/trial-eligibility'
 import {
   fulfillPendingAdminSignup,
@@ -88,8 +92,18 @@ async function findCompletedCheckoutForPendings(pendings: PendingRow[]) {
 export async function getSignupStatus(email: string) {
   const { normalized, pendings } = await loadPendingSignups(email)
 
-  if (await authUserExistsByEmail(normalized)) {
+  const existing = await getAuthUserSummaryByEmail(normalized)
+  if (existing?.emailConfirmed) {
     return { accountReady: true as const, email: normalized }
+  }
+  if (existing) {
+    return {
+      accountReady: false as const,
+      needsEmailVerification: true as const,
+      email: normalized,
+      message:
+        'Verify your email before signing in. Use Resend verification below if needed.',
+    }
   }
 
   if (pendings.length === 0) {
@@ -141,8 +155,18 @@ export async function getSignupStatus(email: string) {
 export async function finishPendingSignup(email: string) {
   const normalized = normalizeSignupEmail(email)
 
-  if (await authUserExistsByEmail(normalized)) {
+  const existing = await getAuthUserSummaryByEmail(normalized)
+  if (existing?.emailConfirmed) {
     return { accountReady: true as const, email: normalized }
+  }
+  if (existing) {
+    return {
+      accountReady: false as const,
+      needsEmailVerification: true as const,
+      email: normalized,
+      message:
+        'Verify your email before signing in. Use Resend verification below if needed.',
+    }
   }
 
   const { pendings } = await loadPendingSignups(email)
@@ -236,8 +260,19 @@ export async function finishPendingSignup(email: string) {
     return { accountReady: false as const, error: message }
   }
 
-  if (await authUserExistsByEmail(normalized)) {
+  const createdUser = await getAuthUserSummaryByEmail(normalized)
+  if (createdUser?.emailConfirmed) {
     return { accountReady: true as const, email: normalized }
+  }
+  if (createdUser) {
+    await sendSignupConfirmationEmail(normalized)
+    return {
+      accountReady: false as const,
+      needsEmailVerification: true as const,
+      email: normalized,
+      message:
+        'Account created. Open the verification link in your email, then sign in.',
+    }
   }
 
   return {
