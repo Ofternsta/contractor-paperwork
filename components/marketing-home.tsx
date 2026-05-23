@@ -263,7 +263,12 @@ export function MarketingHome() {
 
         <section className="border-t border-border bg-surface">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20 text-center">
-            <BrandLogo href="/" size="lg" className="mx-auto mb-6" />
+            <BrandLogo
+              href="/"
+              variant="icon"
+              size="cta"
+              className="mx-auto mb-6"
+            />
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
               Ready to stack your paperwork?
             </h2>

@@ -1,35 +1,48 @@
 import Image from 'next/image'
 import Link from 'next/link'
 
-/** Native pixels of public/logo.png — keep in sync if the asset is replaced. */
-const LOGO_WIDTH = 1254
-const LOGO_HEIGHT = 1254
+const LOGO_ASSETS = {
+  full: { src: '/logo.png', width: 1254, height: 1254 },
+  icon: { src: '/logo-icon.png', width: 1024, height: 734 },
+} as const
 
 type BrandLogoProps = {
   href?: string
-  size?: 'sm' | 'md' | 'lg' | 'hero' | 'hero-xl'
+  size?: 'sm' | 'md' | 'lg' | 'cta' | 'hero' | 'hero-xl'
+  /** full = logo with wordmark; icon = book only */
+  variant?: keyof typeof LOGO_ASSETS
   showWordmark?: boolean
   className?: string
 }
 
-/** hero-xl = 3× default hero (120 → 360) for marketing headline */
-const heights = { sm: 32, md: 40, lg: 56, hero: 120, 'hero-xl': 360 } as const
+const heights = {
+  sm: 32,
+  md: 40,
+  lg: 56,
+  /** 3× lg — “Ready to stack your paperwork?” section */
+  cta: 168,
+  hero: 120,
+  'hero-xl': 360,
+} as const
 
 export function BrandLogo({
   href = '/',
   size = 'md',
+  variant = 'full',
   showWordmark = false,
   className = '',
 }: BrandLogoProps) {
   const h = heights[size]
-  const isPriority = size === 'hero' || size === 'hero-xl' || size === 'lg'
+  const asset = LOGO_ASSETS[variant]
+  const isPriority =
+    size === 'hero' || size === 'hero-xl' || size === 'cta' || size === 'lg'
 
   const img = (
     <Image
-      src="/logo.png"
+      src={asset.src}
       alt="LedgerStack"
-      width={LOGO_WIDTH}
-      height={LOGO_HEIGHT}
+      width={asset.width}
+      height={asset.height}
       quality={95}
       priority={isPriority}
       sizes={`${h}px`}

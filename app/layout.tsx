@@ -16,6 +16,10 @@ export const metadata: Metadata = {
   title: 'LedgerStack',
   description: 'Manage restoration projects, claims, and evidence in the field',
   applicationName: 'LedgerStack',
+  icons: {
+    icon: [{ url: '/logo-icon.png', type: 'image/png' }],
+    apple: [{ url: '/logo-icon.png', type: 'image/png' }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
