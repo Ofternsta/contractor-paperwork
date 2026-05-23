@@ -191,8 +191,13 @@ button {
 }
 
 .nav-pill-active {
-  background: linear-gradient(180deg, var(--brand-bright), var(--brand-dim));
-  color: #052e16;
-  border-color: transparent;
+  background: var(--surface-elevated);
+  color: var(--brand-bright);
+  border-color: var(--brand);
   font-weight: 600;
+}
+
+.nav-pill-active:hover {
+  background: var(--surface-hover);
+  border-color: var(--brand-bright);
 }

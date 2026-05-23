@@ -25,7 +25,7 @@ export function AppNav({ access }: AppNavProps) {
     return (
       <Link
         href={href}
-        className={active ? 'nav-pill-active' : 'nav-pill'}
+        className={`nav-pill${active ? ' nav-pill-active' : ''}`}
       >
         {label}
       </Link>
