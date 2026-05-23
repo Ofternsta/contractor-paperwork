@@ -32,6 +32,8 @@ export type RegisterAdminInput = {
 export type FulfillPendingOptions = {
   paymentMethodFingerprint?: string | null
   stripeCustomerId?: string | null
+  /** Allow fulfillment when checkout completed but the 2h pending row expired */
+  allowExpired?: boolean
 }
 
 async function authUserExists(
@@ -89,8 +91,22 @@ async function insertPendingSignup(input: RegisterAdminInput) {
     .single()
 
   if (pendingError || !pending) {
-    return { error: pendingError?.message || 'Could not start signup' }
+    const msg = pendingError?.message || 'Could not start signup'
+    if (msg.includes('permission denied') && msg.includes('pending_admin_signups')) {
+      return {
+        error:
+          'Database permissions missing. Run supabase/signup-table-grants.sql in Supabase SQL Editor, and set SUPABASE_SERVICE_ROLE_KEY on Vercel.',
+      }
+    }
+    return { error: msg }
   }
+
+  await service
+    .from('pending_admin_signups')
+    .update({ expires_at: new Date().toISOString() })
+    .eq('email', email)
+    .is('consumed_at', null)
+    .neq('id', pending.id)
 
   return { pendingId: pending.id as string, email }
 }
@@ -113,13 +129,23 @@ export async function startTrialAdminSignupCheckout(input: RegisterAdminInput) {
     mode: 'setup',
     customer_email: pending.email,
     payment_method_types: ['card'],
-    success_url: `${appUrl}/login?registered=1&trial=1`,
+    success_url: `${appUrl}/login?registered=1&trial=1&email=${encodeURIComponent(pending.email)}`,
     cancel_url: `${appUrl}/onboarding/subscription?register=1&canceled=1`,
     metadata: {
       pending_signup_id: pending.pendingId,
       plan: 'trial',
     },
   })
+
+  if (session.id) {
+    const { error: sessionIdError } = await createServiceClient()
+      .from('pending_admin_signups')
+      .update({ stripe_session_id: session.id })
+      .eq('id', pending.pendingId)
+    if (sessionIdError) {
+      console.error('pending_admin_signups stripe_session_id update:', sessionIdError)
+    }
+  }
 
   return { checkoutUrl: session.url }
 }
@@ -148,7 +174,7 @@ export async function startPaidAdminSignupCheckout(input: RegisterAdminInput) {
     mode: 'subscription',
     customer_email: pending.email,
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${appUrl}/login?registered=1`,
+    success_url: `${appUrl}/login?registered=1&email=${encodeURIComponent(pending.email)}`,
     cancel_url: `${appUrl}/onboarding/subscription?register=1&canceled=1`,
     metadata: {
       pending_signup_id: pending.pendingId,
@@ -161,6 +187,16 @@ export async function startPaidAdminSignupCheckout(input: RegisterAdminInput) {
       },
     },
   })
+
+  if (session.id) {
+    const { error: sessionIdError } = await createServiceClient()
+      .from('pending_admin_signups')
+      .update({ stripe_session_id: session.id })
+      .eq('id', pending.pendingId)
+    if (sessionIdError) {
+      console.error('pending_admin_signups stripe_session_id update:', sessionIdError)
+    }
+  }
 
   return { checkoutUrl: session.url }
 }
@@ -185,7 +221,10 @@ export async function fulfillPendingAdminSignup(
     return { alreadyConsumed: true as const }
   }
 
-  if (new Date(pending.expires_at).getTime() < Date.now()) {
+  if (
+    !options.allowExpired &&
+    new Date(pending.expires_at).getTime() < Date.now()
+  ) {
     throw new Error('Pending signup expired')
   }
 
@@ -210,7 +249,21 @@ export async function fulfillPendingAdminSignup(
     return { alreadyConsumed: true as const }
   }
 
-  const password = decryptSignupPassword(pending.password_encrypted)
+  if (!pending.password_encrypted?.trim()) {
+    throw new Error(
+      'Signup password data is missing. Sign up again with a new email.'
+    )
+  }
+
+  let password: string
+  try {
+    password = decryptSignupPassword(pending.password_encrypted)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Decrypt failed'
+    throw new Error(
+      `Could not restore signup password (${message}). Ensure PENDING_SIGNUP_SECRET matches the value used at signup.`
+    )
+  }
 
   const { data: created, error: createError } =
     await service.auth.admin.createUser({

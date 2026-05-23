@@ -13,8 +13,9 @@
 1. `supabase/roles-and-orgs.sql` — profiles, organizations, RLS on projects/claims
 2. `supabase/platform-security.sql` — storage RLS, subscriptions, invoices, timelines, claim updates
 3. `supabase/billing-pending-status.sql` — if subscriptions already exist, adds `pending` status for checkout
-4. `supabase/account-role-fix.sql` — lets workers convert to admin (wrong signup)
-5. `supabase/messaging.sql` — admin↔worker team chat and project messages with clients
+4. `supabase/trial-and-pending-signup.sql` + `supabase/trial-payment-method.sql` + **`supabase/signup-table-grants.sql`** (signup tables; grants fix “permission denied”)
+5. `supabase/account-role-fix.sql` — lets workers convert to admin (wrong signup)
+6. `supabase/messaging.sql` — admin↔worker team chat and project messages with clients
 
 ### Worker signup (company invite code)
 

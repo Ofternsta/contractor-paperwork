@@ -103,25 +103,36 @@ export async function handleCheckoutSessionCompleted(
 
   if (pendingSignupId) {
     const stripeKey = process.env.STRIPE_SECRET_KEY
-    const stripe = stripeKey ? new Stripe(stripeKey) : null
+    if (!stripeKey) {
+      console.error('STRIPE_SECRET_KEY missing — cannot fulfill pending signup')
+      throw new Error('Stripe not configured')
+    }
+    const stripe = new Stripe(stripeKey)
     const { getCheckoutPaymentFingerprint } = await import(
       '@/lib/stripe-payment-fingerprint'
     )
     const { fulfillPendingAdminSignup } = await import('@/lib/register-admin')
 
-    const fingerprint = stripe
-      ? await getCheckoutPaymentFingerprint(stripe, session)
-      : null
+    const fingerprint = await getCheckoutPaymentFingerprint(stripe, session)
 
     const customerId =
       typeof session.customer === 'string'
         ? session.customer
         : session.customer?.id ?? null
 
-    await fulfillPendingAdminSignup(pendingSignupId, {
+    console.info(
+      'Fulfilling pending signup',
+      pendingSignupId,
+      session.metadata?.plan
+    )
+
+    const result = await fulfillPendingAdminSignup(pendingSignupId, {
       paymentMethodFingerprint: fingerprint,
       stripeCustomerId: customerId,
+      allowExpired: true,
     })
+
+    console.info('Pending signup fulfill result', pendingSignupId, result)
     return
   }
 

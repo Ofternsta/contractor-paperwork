@@ -16,3 +16,6 @@ CREATE TABLE IF NOT EXISTS public.trial_payment_fingerprints (
 );
 
 ALTER TABLE public.trial_payment_fingerprints ENABLE ROW LEVEL SECURITY;
+
+GRANT SELECT, INSERT ON public.trial_payment_fingerprints TO service_role;
+GRANT EXECUTE ON FUNCTION public.get_auth_user_id_by_email(text) TO service_role;

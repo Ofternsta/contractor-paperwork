@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS public.pending_admin_signups (
   full_name text,
   organization_name text NOT NULL DEFAULT 'My Company',
   plan text NOT NULL CHECK (plan IN ('trial', 'starter', 'professional', 'enterprise')),
+  stripe_session_id text,
   consumed_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   expires_at timestamptz NOT NULL DEFAULT (now() + interval '2 hours')
@@ -38,6 +39,9 @@ CREATE INDEX IF NOT EXISTS pending_admin_signups_email_idx
   WHERE consumed_at IS NULL;
 
 ALTER TABLE public.pending_admin_signups ENABLE ROW LEVEL SECURITY;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.pending_admin_signups TO service_role;
+GRANT SELECT, INSERT ON public.email_trial_registry TO service_role;
 
 -- Only service role uses these tables (no client policies)
 

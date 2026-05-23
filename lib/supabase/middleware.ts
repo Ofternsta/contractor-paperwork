@@ -35,7 +35,8 @@ export async function updateSession(request: NextRequest) {
   const isPublicApi =
     pathname.startsWith('/api/billing/webhook') ||
     pathname.startsWith('/api/auth/register-admin') ||
-    pathname.startsWith('/api/auth/trial-eligibility')
+    pathname.startsWith('/api/auth/trial-eligibility') ||
+    pathname.startsWith('/api/auth/finish-signup')
   const isPublicOnboarding =
     pathname.startsWith('/onboarding/subscription')
 

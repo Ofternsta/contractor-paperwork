@@ -11,6 +11,7 @@ import {
 } from '@/lib/invite-code'
 import type { AppRole } from '@/lib/roles'
 import { supabase } from '@/lib/supabase'
+import { finishAccountSetup, getAccountSetupStatus } from './actions'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -27,24 +28,89 @@ export default function LoginPage() {
   const [inviteChecking, setInviteChecking] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [finishingAccount, setFinishingAccount] = useState(false)
+  const [postPaymentEmail, setPostPaymentEmail] = useState<string | null>(null)
+
+  const runFinishSignup = useCallback(async (targetEmail: string) => {
+    const normalized = targetEmail.trim().toLowerCase()
+    if (!normalized) return
+
+    setFinishingAccount(true)
+    setEmail(normalized)
+    setMessage('Creating your account from Stripe payment…')
+
+    try {
+      const status = await getAccountSetupStatus(normalized)
+
+      if (status.accountReady) {
+        setMessage(
+          `Your account is ready. Sign in as ${normalized} with the password you chose at signup (before Stripe).`
+        )
+        setFinishingAccount(false)
+        return
+      }
+
+      const finish = await finishAccountSetup(normalized)
+
+      if (finish.accountReady) {
+        setMessage(
+          `Your account is ready. Sign in as ${normalized} with the password you chose at signup (before Stripe).`
+        )
+        setFinishingAccount(false)
+        return
+      }
+
+      if ('error' in finish && finish.error) {
+        setMessage(finish.error)
+        setFinishingAccount(false)
+        return
+      }
+
+      if ('message' in status && status.message) {
+        setMessage(status.message)
+      } else {
+        setMessage(
+          'Could not finish setup. Confirm Enterprise payment in Stripe, then click Finish account setup again.'
+        )
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Setup failed'
+      setMessage(msg)
+    }
+    setFinishingAccount(false)
+  }, [])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
+    const registeredEmail = params.get('email')?.trim().toLowerCase()
+
     if (params.get('registered') === '1') {
+      if (registeredEmail) {
+        setEmail(registeredEmail)
+        setPostPaymentEmail(registeredEmail)
+      }
       setMessage(
         params.get('trial') === '1'
-          ? 'Card verified and account created. Sign in with your email and password.'
-          : 'Payment complete. Sign in with your email and password.'
+          ? 'Card verified. Finishing your account…'
+          : 'Payment received. Finishing your account…'
       )
       setMode('signin')
+      if (registeredEmail) {
+        void runFinishSignup(registeredEmail)
+      } else {
+        setMessage(
+          'Add your email to the URL: /login?registered=1&email=you@company.com'
+        )
+      }
     }
+
     if (params.get('signup') === 'admin') {
       setMessage('Enter your details on sign up, then choose a subscription plan.')
       setMode('signup')
       setRole('admin')
     }
-  }, [])
+  }, [runFinishSignup])
 
   const verifyInvite = useCallback(async (raw: string) => {
     const code = normalizeInviteCode(raw)
@@ -194,13 +260,36 @@ export default function LoginPage() {
       return
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+    const loginEmail = email.trim().toLowerCase()
+
+    let { error } = await supabase.auth.signInWithPassword({
+      email: loginEmail,
       password,
     })
 
+    if (error?.message?.toLowerCase().includes('invalid login')) {
+      const finish = await finishAccountSetup(loginEmail)
+      if (finish.accountReady) {
+        const retry = await supabase.auth.signInWithPassword({
+          email: loginEmail,
+          password,
+        })
+        error = retry.error
+      } else if (finish.error) {
+        setMessage(
+          `${finish.error} Use the exact password from signup (before Stripe checkout).`
+        )
+        setLoading(false)
+        return
+      }
+    }
+
     if (error) {
-      setMessage(error.message)
+      setMessage(
+        error.message.includes('Invalid login')
+          ? `${error.message} If you just paid, wait for “account is ready” above, then use the same password you chose at signup.`
+          : error.message
+      )
       setLoading(false)
       return
     }
@@ -460,19 +549,33 @@ export default function LoginPage() {
           {message && (
             <p
               className={`text-sm leading-relaxed ${
-                message.includes('created') || message.includes('approval')
-                  ? 'text-green-800'
-                  : 'text-red-700'
+                message.includes('ready') ||
+                message.includes('created') ||
+                message.includes('approval')
+                  ? 'text-green-800 bg-green-50 border border-green-100 rounded-lg p-3'
+                  : 'text-red-700 bg-red-50 border border-red-100 rounded-lg p-3'
               }`}
             >
               {message}
             </p>
           )}
 
+          {postPaymentEmail && (
+            <button
+              type="button"
+              disabled={finishingAccount || !email.trim()}
+              onClick={() => runFinishSignup(email.trim() || postPaymentEmail || '')}
+              className="w-full border border-gray-300 text-gray-900 py-3 rounded-xl font-medium disabled:opacity-50 min-h-[48px]"
+            >
+              {finishingAccount ? 'Finishing account…' : 'Finish account setup'}
+            </button>
+          )}
+
           <button
             type="submit"
             disabled={
               loading ||
+              finishingAccount ||
               !email.trim() ||
               !password ||
               (mode === 'signup' && !confirmPassword) ||
