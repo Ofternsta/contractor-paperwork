@@ -75,7 +75,7 @@ function BillingContent() {
   }
 
   if (!data) {
-    return <p className="text-gray-600">Loading billing…</p>
+    return <p className="text-muted">Loading billing…</p>
   }
 
   return (
@@ -91,7 +91,7 @@ function BillingContent() {
           No active subscription yet. Select a plan below to continue.
         </p>
       ) : (
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted">
           Current:{' '}
           <strong className="capitalize">{data.subscription.plan}</strong> (
           {data.subscription.status}) · {data.projectCount} project(s)
@@ -112,14 +112,14 @@ function BillingContent() {
             key={key}
             className={`border rounded-xl p-4 ${
               data.subscription?.plan === key
-                ? 'border-black bg-gray-50'
-                : 'border-gray-200'
+                ? 'border-black bg-surface'
+                : 'border-border'
             }`}
           >
             <div className="flex justify-between items-start gap-2">
               <div>
                 <p className="font-bold">{plan.name}</p>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-muted mt-1">
                   {plan.price === 0
                     ? 'Free trial'
                     : `$${plan.price}/month`}
@@ -133,7 +133,7 @@ function BillingContent() {
                   type="button"
                   disabled={loading !== null}
                   onClick={() => selectPlan(key)}
-                  className="shrink-0 bg-black text-white text-sm px-4 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
+                  className="shrink-0 btn-primary text-[#052e16] text-sm px-4 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
                 >
                   {loading === key ? '…' : 'Select'}
                 </button>
@@ -169,7 +169,7 @@ export default function BillingPage() {
   if (!access) {
     return (
       <div className="min-h-dvh flex items-center justify-center">
-        <p className="text-gray-600">Loading…</p>
+        <p className="text-muted">Loading…</p>
       </div>
     )
   }
@@ -187,7 +187,7 @@ export default function BillingPage() {
 
       <main className="flex-1 safe-x px-4 py-4 max-w-lg mx-auto w-full pb-8 safe-bottom space-y-6">
         <AppNav access={access} />
-        <Suspense fallback={<p className="text-gray-600">Loading billing…</p>}>
+        <Suspense fallback={<p className="text-muted">Loading billing…</p>}>
           <BillingContent />
         </Suspense>
       </main>

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { BrandLogo } from '@/components/brand-logo'
 
 type AppHeaderProps = {
   title: string
@@ -18,25 +19,27 @@ export function AppHeader({
   signingOut,
 }: AppHeaderProps) {
   return (
-    <header className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-gray-200 safe-top">
+    <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border safe-top">
       <div className="px-4 py-3 max-w-5xl mx-auto">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            {backHref && (
+            {backHref ? (
               <Link
                 href={backHref}
-                className="inline-flex items-center text-sm text-blue-700 font-medium mb-2 min-h-[44px]"
+                className="inline-flex items-center text-sm text-brand-bright font-medium mb-2 min-h-[44px]"
               >
                 ← {backLabel}
               </Link>
+            ) : (
+              <div className="mb-2">
+                <BrandLogo href="/projects" size="sm" />
+              </div>
             )}
-            <h1 className="text-xl sm:text-2xl font-bold leading-tight">
+            <h1 className="text-xl sm:text-2xl font-bold leading-tight text-white">
               {title}
             </h1>
             {subtitle && (
-              <p className="text-sm text-gray-600 mt-1 leading-snug">
-                {subtitle}
-              </p>
+              <p className="text-sm text-muted mt-1 leading-snug">{subtitle}</p>
             )}
           </div>
           {onSignOut && (
@@ -44,7 +47,7 @@ export function AppHeader({
               type="button"
               onClick={onSignOut}
               disabled={signingOut}
-              className="shrink-0 text-sm text-gray-600 font-medium min-h-[44px] px-2 disabled:opacity-50"
+              className="shrink-0 text-sm text-muted font-medium min-h-[44px] px-2 hover:text-foreground disabled:opacity-50"
             >
               {signingOut ? '…' : 'Sign out'}
             </button>

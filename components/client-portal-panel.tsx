@@ -61,25 +61,25 @@ export function ClientPortalPanel({
   return (
     <section className="border border-blue-100 rounded-xl p-4 bg-blue-50/50 space-y-3">
       <h2 className="font-bold text-lg">Client portal</h2>
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-muted">
         View project progress, documents above, and invoices or approvals below.
       </p>
 
-      {loading && <p className="text-sm text-gray-500">Loading invoices…</p>}
+      {loading && <p className="text-sm text-muted-dim">Loading invoices…</p>}
 
       {!loading && invoices.length === 0 && (
-        <p className="text-sm text-gray-500">No invoices shared yet.</p>
+        <p className="text-sm text-muted-dim">No invoices shared yet.</p>
       )}
 
       <ul className="space-y-2">
         {invoices.map((inv) => (
           <li
             key={inv.id}
-            className="bg-white border border-gray-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+            className="bg-surface-elevated border border-border rounded-xl p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
           >
             <div>
               <p className="font-medium">{inv.title}</p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted">
                 {formatAmount(inv.amount_cents)} ·{' '}
                 <span className="capitalize">{inv.status}</span>
               </p>
@@ -96,7 +96,7 @@ export function ClientPortalPanel({
                 <button
                   type="button"
                   onClick={() => updateStatus(inv.id, 'rejected')}
-                  className="text-sm border border-red-300 text-red-700 px-3 py-2 rounded-lg min-h-[40px]"
+                  className="text-sm border border-red-300 text-red-400 px-3 py-2 rounded-lg min-h-[40px]"
                 >
                   Reject
                 </button>

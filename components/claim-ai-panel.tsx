@@ -102,7 +102,7 @@ export function ClaimAiPanel({
   }
 
   return (
-    <section className="border border-gray-200 rounded-xl p-4 bg-white space-y-4">
+    <section className="border border-border rounded-xl p-4 bg-surface-elevated space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-bold text-lg">Claim intelligence</h2>
         <div className="flex flex-wrap gap-2">
@@ -112,7 +112,7 @@ export function ClaimAiPanel({
                 type="button"
                 onClick={generateSummary}
                 disabled={loadingSummary || aiAtLimit}
-                className="text-sm bg-black text-white px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
+                className="text-sm btn-primary text-[#052e16] px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
               >
                 {loadingSummary ? 'Generating…' : 'AI summary'}
               </button>
@@ -120,7 +120,7 @@ export function ClaimAiPanel({
                 type="button"
                 onClick={regenerateTimeline}
                 disabled={loadingTimeline || aiAtLimit}
-                className="text-sm border border-gray-300 px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
+                className="text-sm border border-border px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
               >
                 {loadingTimeline ? 'Updating…' : 'Refresh timeline'}
               </button>
@@ -130,7 +130,7 @@ export function ClaimAiPanel({
             <button
               type="button"
               onClick={() => exportReport('pdf')}
-              className="text-sm border border-gray-300 px-3 py-2 rounded-lg min-h-[40px]"
+              className="text-sm border border-border px-3 py-2 rounded-lg min-h-[40px]"
             >
               Export PDF
             </button>
@@ -139,7 +139,7 @@ export function ClaimAiPanel({
             <button
               type="button"
               onClick={() => exportReport('html')}
-              className="text-sm border border-gray-300 px-3 py-2 rounded-lg min-h-[40px]"
+              className="text-sm border border-border px-3 py-2 rounded-lg min-h-[40px]"
             >
               {exportHasWatermark ? 'Preview export' : 'Export HTML'}
             </button>
@@ -148,7 +148,7 @@ export function ClaimAiPanel({
       </div>
 
       {!isUnlimited(aiSummariesLimit) && (
-        <p className="text-xs text-gray-600">
+        <p className="text-xs text-muted">
           AI summaries this month: {aiSummariesUsed} / {aiSummariesLimit}
           {aiAtLimit && ' — limit reached. Upgrade for more.'}
         </p>
@@ -162,7 +162,7 @@ export function ClaimAiPanel({
       )}
 
       {error && (
-        <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg p-2">
+        <p className="text-sm alert-error rounded-lg p-2">
           {error}
         </p>
       )}
@@ -170,28 +170,28 @@ export function ClaimAiPanel({
       {summary && (
         <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
           <p className="text-xs font-semibold text-blue-900 mb-1">AI summary</p>
-          <p className="text-sm text-blue-950 leading-relaxed">{summary}</p>
+          <p className="text-sm text-green-100 leading-relaxed">{summary}</p>
         </div>
       )}
 
       <div>
         <p className="text-sm font-semibold text-gray-800 mb-2">Timeline</p>
         {loadingTimeline && events.length === 0 && (
-          <p className="text-sm text-gray-500">Loading timeline…</p>
+          <p className="text-sm text-muted-dim">Loading timeline…</p>
         )}
         {!loadingTimeline && events.length === 0 && (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-dim">
             Upload evidence, then refresh timeline to build a claim history.
           </p>
         )}
-        <ol className="space-y-3 border-l-2 border-gray-200 pl-4 ml-1">
+        <ol className="space-y-3 border-l-2 border-border pl-4 ml-1">
           {events.map((e, i) => (
             <li key={`${e.event_date}-${e.title}-${i}`} className="relative">
               <span className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-black" />
-              <p className="text-xs text-gray-500">{e.event_date}</p>
+              <p className="text-xs text-muted-dim">{e.event_date}</p>
               <p className="font-medium text-sm">{e.title}</p>
               {e.description && (
-                <p className="text-sm text-gray-600 mt-0.5">{e.description}</p>
+                <p className="text-sm text-muted mt-0.5">{e.description}</p>
               )}
             </li>
           ))}

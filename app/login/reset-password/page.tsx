@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { BrandLogo } from '@/components/brand-logo'
 import { supabase } from '@/lib/supabase'
 
 export default function ResetPasswordPage() {
@@ -54,31 +55,23 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col safe-top safe-bottom">
+    <div className="min-h-dvh flex flex-col safe-top safe-bottom bg-background">
       <main className="flex-1 flex flex-col justify-center safe-x px-4 py-8 max-w-md mx-auto w-full">
         <div className="mb-8 text-center">
-          <p className="text-4xl mb-3" aria-hidden>
-            🔐
-          </p>
-          <h1 className="text-2xl font-bold">Set a new password</h1>
-          <p className="text-gray-600 mt-2 text-sm">
+          <BrandLogo href="/" size="lg" className="mx-auto" />
+          <h1 className="text-2xl font-bold mt-4 text-white">Set a new password</h1>
+          <p className="text-muted mt-2 text-sm">
             Choose a password for your LedgerStack account
           </p>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="border border-gray-200 rounded-xl p-5 bg-gray-50 space-y-4"
-        >
+        <form onSubmit={handleSubmit} className="card-elevated p-5 space-y-4">
           {checkingSession ? (
-            <p className="text-sm text-gray-600">Checking reset link…</p>
+            <p className="text-sm text-muted">Checking reset link…</p>
           ) : hasSession ? (
             <>
               <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
+                <label htmlFor="password" className="block text-sm font-medium text-muted mb-1">
                   New password
                 </label>
                 <input
@@ -89,7 +82,7 @@ export default function ResetPasswordPage() {
                   minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="border border-gray-300 rounded-xl p-3 w-full bg-white"
+                  className="input-field"
                   placeholder="At least 6 characters"
                 />
               </div>
@@ -97,7 +90,7 @@ export default function ResetPasswordPage() {
               <div>
                 <label
                   htmlFor="confirmPassword"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-muted mb-1"
                 >
                   Confirm new password
                 </label>
@@ -109,7 +102,7 @@ export default function ResetPasswordPage() {
                   minLength={6}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="border border-gray-300 rounded-xl p-3 w-full bg-white"
+                  className="input-field"
                   placeholder="Re-enter password"
                 />
               </div>
@@ -120,8 +113,8 @@ export default function ResetPasswordPage() {
             <p
               className={`text-sm leading-relaxed ${
                 message.includes('updated') || message.includes('success')
-                  ? 'text-green-800 bg-green-50 border border-green-100 rounded-lg p-3'
-                  : 'text-red-700 bg-red-50 border border-red-100 rounded-lg p-3'
+                  ? 'alert-success'
+                  : 'alert-error'
               }`}
             >
               {message}
@@ -132,7 +125,7 @@ export default function ResetPasswordPage() {
             <button
               type="submit"
               disabled={loading || !password || !confirmPassword}
-              className="w-full bg-black text-white py-4 rounded-xl font-medium disabled:opacity-50 min-h-[52px]"
+              className="w-full btn-primary py-4 font-semibold disabled:opacity-50 min-h-[52px]"
             >
               {loading ? 'Saving…' : 'Update password'}
             </button>
@@ -140,7 +133,7 @@ export default function ResetPasswordPage() {
 
           <Link
             href="/login"
-            className="block text-center text-sm text-gray-600 underline min-h-[44px] leading-[44px]"
+            className="block text-center text-sm text-brand-bright underline min-h-[44px] leading-[44px]"
           >
             Back to sign in
           </Link>

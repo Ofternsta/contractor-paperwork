@@ -73,7 +73,7 @@ export default function CalendarPage() {
   if (!access) {
     return (
       <div className="min-h-dvh flex items-center justify-center">
-        <p className="text-gray-600">Loading…</p>
+        <p className="text-muted">Loading…</p>
       </div>
     )
   }
@@ -99,21 +99,21 @@ export default function CalendarPage() {
       />
       <main className="flex-1 safe-x px-4 py-4 max-w-2xl mx-auto w-full pb-8 space-y-4">
         <AppNav access={access} />
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted">
           Upcoming inspections, deadlines, reminders, and insurance follow-ups
           across all projects. Open a project to add or edit events.
         </p>
         {loading ? (
-          <p className="text-gray-500">Loading…</p>
+          <p className="text-muted-dim">Loading…</p>
         ) : days.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">
+          <p className="text-muted-dim text-center py-8">
             No events in the next two months.
           </p>
         ) : (
           <ul className="space-y-4">
             {days.map((day) => (
               <li key={day}>
-                <h2 className="font-bold text-gray-900 mb-2">{day}</h2>
+                <h2 className="font-bold text-foreground mb-2">{day}</h2>
                 <ul className="space-y-2">
                   {byDay[day].map((ev) => (
                     <li
@@ -121,7 +121,7 @@ export default function CalendarPage() {
                       className={`border rounded-xl p-3 ${
                         ev.completed_at
                           ? 'border-gray-100 opacity-60'
-                          : 'border-gray-200 bg-white'
+                          : 'border-border bg-surface-elevated'
                       }`}
                     >
                       <Link
@@ -130,7 +130,7 @@ export default function CalendarPage() {
                       >
                         {ev.title}
                       </Link>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-muted-dim mt-1">
                         {SCHEDULE_EVENT_LABELS[ev.event_type]} ·{' '}
                         {new Date(ev.starts_at).toLocaleTimeString(undefined, {
                           hour: 'numeric',

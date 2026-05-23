@@ -78,21 +78,21 @@ export function AdminTeamPanel() {
 
   if (loading) {
     return (
-      <p className="text-sm text-gray-500">Loading team…</p>
+      <p className="text-sm text-muted-dim">Loading team…</p>
     )
   }
 
   if (!org) return null
 
   return (
-    <section className="border border-gray-200 rounded-xl p-4 bg-white space-y-3">
+    <section className="border border-border rounded-xl p-4 bg-surface-elevated space-y-3">
       <h2 className="font-bold text-lg">Team & workers</h2>
-      <p className="text-sm text-gray-600 leading-relaxed">
+      <p className="text-sm text-muted leading-relaxed">
         This <strong>auto-generated</strong> code is required for worker signup.
         Each worker needs your <strong>one-time approval</strong> after they join.
       </p>
       <div className="bg-gray-100 rounded-xl p-4 text-center space-y-2">
-        <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+        <p className="text-xs text-muted-dim uppercase tracking-wide mb-1">
           Worker invite code (8 characters)
         </p>
         <p className="text-2xl font-bold tracking-[0.2em] font-mono">
@@ -102,14 +102,14 @@ export function AdminTeamPanel() {
           type="button"
           disabled={regenerating}
           onClick={regenerateCode}
-          className="text-sm text-blue-700 font-medium min-h-[40px] disabled:opacity-50"
+          className="text-sm text-brand-bright font-medium min-h-[40px] disabled:opacity-50"
         >
           {regenerating ? 'Generating…' : 'Generate new code'}
         </button>
       </div>
 
       {pending.length === 0 ? (
-        <p className="text-sm text-gray-500">No pending worker requests.</p>
+        <p className="text-sm text-muted-dim">No pending worker requests.</p>
       ) : (
         <ul className="space-y-2">
           {pending.map((m) => (
@@ -125,7 +125,7 @@ export function AdminTeamPanel() {
                   type="button"
                   disabled={actingId === m.id}
                   onClick={() => act(m.id, 'approve')}
-                  className="flex-1 bg-black text-white py-2 rounded-lg text-sm font-medium min-h-[44px] disabled:opacity-50"
+                  className="flex-1 btn-primary text-[#052e16] py-2 rounded-lg text-sm font-medium min-h-[44px] disabled:opacity-50"
                 >
                   Approve
                 </button>
@@ -133,7 +133,7 @@ export function AdminTeamPanel() {
                   type="button"
                   disabled={actingId === m.id}
                   onClick={() => act(m.id, 'reject')}
-                  className="flex-1 border border-gray-300 py-2 rounded-lg text-sm font-medium min-h-[44px] disabled:opacity-50"
+                  className="flex-1 border border-border py-2 rounded-lg text-sm font-medium min-h-[44px] disabled:opacity-50"
                 >
                   Deny
                 </button>
@@ -150,14 +150,14 @@ export function AdminTeamPanel() {
             {approved.map((m) => (
               <li
                 key={m.id}
-                className="border border-gray-200 rounded-xl p-3 flex flex-col gap-2"
+                className="border border-border rounded-xl p-3 flex flex-col gap-2"
               >
                 <p className="font-medium text-sm">{m.full_name || 'Worker'}</p>
                 <button
                   type="button"
                   disabled={actingId === m.id}
                   onClick={() => act(m.id, 'promote_admin')}
-                  className="text-sm border border-gray-300 py-2 rounded-lg font-medium min-h-[44px] disabled:opacity-50"
+                  className="text-sm border border-border py-2 rounded-lg font-medium min-h-[44px] disabled:opacity-50"
                 >
                   Make organization admin
                 </button>

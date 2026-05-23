@@ -124,30 +124,30 @@ export function InternalNotesPanel({
   }
 
   return (
-    <section className="border border-gray-200 rounded-xl p-4 bg-white space-y-3">
+    <section className="border border-border rounded-xl p-4 bg-surface-elevated space-y-3">
       <div>
         <h2 className="font-bold text-lg">Internal notes &amp; team log</h2>
-        <p className="text-sm text-gray-600 mt-1">
+        <p className="text-sm text-muted mt-1">
           Worker notes, @mentions, status updates, and communication history.
           Clients cannot see this.
         </p>
       </div>
 
       {error && (
-        <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg p-2">
+        <p className="text-sm alert-error rounded-lg p-2">
           {error}
         </p>
       )}
 
       {canPost && (
-        <form onSubmit={submit} className="space-y-2 border border-gray-100 rounded-xl p-3 bg-gray-50">
+        <form onSubmit={submit} className="space-y-2 border border-gray-100 rounded-xl p-3 bg-surface">
           <div className="flex flex-wrap gap-2">
             <select
               value={noteKind}
               onChange={(e) =>
                 setNoteKind(e.target.value as 'note' | 'status_update')
               }
-              className="border border-gray-300 rounded-lg p-2 text-sm bg-white"
+              className="border border-border rounded-lg p-2 text-sm bg-surface-elevated"
             >
               <option value="note">Worker note</option>
               <option value="status_update">Status update</option>
@@ -156,19 +156,19 @@ export function InternalNotesPanel({
               <button
                 type="button"
                 onClick={() => setMentionOpen((v) => !v)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium min-h-[40px] bg-white"
+                className="border border-border rounded-lg px-3 py-2 text-sm font-medium min-h-[40px] bg-surface-elevated"
               >
                 @ Mention
               </button>
               {mentionOpen && (
-                <ul className="absolute z-10 mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-lg max-h-40 overflow-y-auto">
+                <ul className="absolute z-10 mt-1 w-48 bg-surface-elevated border border-border rounded-xl shadow-lg max-h-40 overflow-y-auto">
                   {roster
                     .filter((m) => m.id !== currentUserId)
                     .map((m) => (
                       <li key={m.id}>
                         <button
                           type="button"
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-surface"
                           onClick={() => insertMention(m)}
                         >
                           {m.label}
@@ -185,12 +185,12 @@ export function InternalNotesPanel({
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Add an internal note… Use @ Mention to notify a teammate."
             rows={3}
-            className="w-full border border-gray-300 rounded-xl p-3 text-sm resize-none bg-white"
+            className="w-full border border-border rounded-xl p-3 text-sm resize-none bg-surface-elevated"
           />
           <button
             type="submit"
             disabled={saving || !draft.trim()}
-            className="w-full bg-black text-white py-3 rounded-xl font-medium text-sm disabled:opacity-50 min-h-[48px]"
+            className="w-full btn-primary text-[#052e16] py-3 rounded-xl font-medium text-sm disabled:opacity-50 min-h-[48px]"
           >
             {saving ? 'Posting…' : 'Post to team log'}
           </button>
@@ -198,14 +198,14 @@ export function InternalNotesPanel({
       )}
 
       <div
-        className="border border-gray-100 rounded-xl bg-gray-50 max-h-[360px] overflow-y-auto divide-y divide-gray-100"
+        className="border border-gray-100 rounded-xl bg-surface max-h-[360px] overflow-y-auto divide-y divide-gray-100"
         aria-live="polite"
       >
         {loading && (
-          <p className="text-sm text-gray-500 text-center py-6">Loading history…</p>
+          <p className="text-sm text-muted-dim text-center py-6">Loading history…</p>
         )}
         {!loading && notes.length === 0 && (
-          <p className="text-sm text-gray-500 text-center py-6">
+          <p className="text-sm text-muted-dim text-center py-6">
             No internal notes yet.
           </p>
         )}
@@ -214,13 +214,13 @@ export function InternalNotesPanel({
           return (
             <article key={n.id} className="p-3 text-sm">
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <span className={`font-semibold ${mine ? 'text-black' : 'text-gray-900'}`}>
+                <span className={`font-semibold ${mine ? 'text-black' : 'text-foreground'}`}>
                   {n.author_name}
                 </span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">
+                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 text-muted">
                   {kindLabel(n.note_kind)}
                 </span>
-                <span className="text-xs text-gray-500 ml-auto">
+                <span className="text-xs text-muted-dim ml-auto">
                   {new Date(n.created_at).toLocaleString()}
                 </span>
               </div>
@@ -229,7 +229,7 @@ export function InternalNotesPanel({
                 dangerouslySetInnerHTML={{ __html: renderBodyHtml(n.body) }}
               />
               {n.mentioned_users.length > 0 && (
-                <p className="text-xs text-blue-700 mt-2">
+                <p className="text-xs text-brand-bright mt-2">
                   Notified: {n.mentioned_users.map((u) => u.name).join(', ')}
                 </p>
               )}
@@ -241,7 +241,7 @@ export function InternalNotesPanel({
       <button
         type="button"
         onClick={load}
-        className="text-xs text-blue-700 font-medium min-h-[40px]"
+        className="text-xs text-brand-bright font-medium min-h-[40px]"
       >
         Refresh log
       </button>

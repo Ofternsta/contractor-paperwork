@@ -308,11 +308,11 @@ export default function ProjectPageClient() {
         )}
 
         <label className="block lg:hidden">
-          <span className="text-sm font-medium text-gray-700 mb-1 block">
+          <span className="text-sm font-medium text-muted mb-1 block">
             Active claim
           </span>
           <select
-            className="w-full border border-gray-300 rounded-xl p-3 bg-white"
+            className="input-field"
             value={selectedClaim?.id || ''}
             onChange={(e) => {
               const claim = claims.find((c) => c.id === e.target.value)
@@ -328,17 +328,17 @@ export default function ProjectPageClient() {
         </label>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
-          <aside className="hidden lg:block lg:col-span-3 border rounded-xl p-3">
+          <aside className="hidden lg:block lg:col-span-3 card p-3">
             <h2 className="font-bold mb-3">Claims</h2>
             {claims.map((c) => (
               <button
                 key={c.id}
                 type="button"
                 onClick={() => setSelectedClaim(c)}
-                className={`w-full text-left p-3 mb-2 rounded-lg ${
+                className={`w-full text-left p-3 mb-2 rounded-lg transition-colors ${
                   selectedClaim?.id === c.id
-                    ? 'bg-black text-white'
-                    : 'bg-gray-100'
+                    ? 'btn-primary text-[#052e16]'
+                    : 'bg-surface-elevated border border-border hover:border-brand-dim/50'
                 }`}
               >
                 <p className="font-bold">{c.client_name}</p>
@@ -423,7 +423,7 @@ export default function ProjectPageClient() {
                 onChange={(e) => setSearch(e.target.value)}
               />
               <select
-                className="border border-gray-300 rounded-xl p-3 w-full sm:w-auto sm:min-w-[180px]"
+                className="input-field w-full sm:w-auto sm:min-w-[180px]"
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
               >

@@ -61,20 +61,20 @@ export function EvidenceCard({
   }
 
   return (
-    <article className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm">
+    <article className="border border-border rounded-xl p-4 bg-surface-elevated shadow-sm">
       <span className="inline-block text-xs font-semibold bg-gray-100 text-gray-800 px-2 py-1 rounded-full mb-2">
         {doc.evidence_type}
       </span>
       <button
         type="button"
-        className="block font-medium text-blue-700 text-left w-full py-1 min-h-[44px]"
+        className="block font-medium text-brand-bright text-left w-full py-1 min-h-[44px]"
         onClick={() => onOpen(doc.file_path)}
       >
         {doc.file_name}
       </button>
 
       {doc.created_at && (
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-muted-dim mt-1">
           Uploaded {new Date(doc.created_at).toLocaleString()}
           {doc.uploaded_by_label ? ` · ${doc.uploaded_by_label}` : ''}
         </p>
@@ -85,7 +85,7 @@ export function EvidenceCard({
           <select
             value={evidenceType}
             onChange={(e) => setEvidenceType(e.target.value)}
-            className="border border-gray-300 rounded-xl p-2 w-full text-sm"
+            className="border border-border rounded-xl p-2 w-full text-sm"
           >
             {EVIDENCE_TYPES.map((t) => (
               <option key={t} value={t}>
@@ -96,15 +96,15 @@ export function EvidenceCard({
           <textarea
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
-            className="border border-gray-300 rounded-xl p-3 w-full min-h-[100px] text-sm"
+            className="border border-border rounded-xl p-3 w-full min-h-[100px] text-sm"
           />
-          {error && <p className="text-sm text-red-700">{error}</p>}
+          {error && <p className="text-sm text-red-400">{error}</p>}
           <div className="flex gap-2">
             <button
               type="button"
               onClick={save}
               disabled={saving}
-              className="flex-1 bg-black text-white py-2 rounded-lg text-sm font-medium min-h-[44px] disabled:opacity-50"
+              className="flex-1 btn-primary text-[#052e16] py-2 rounded-lg text-sm font-medium min-h-[44px] disabled:opacity-50"
             >
               {saving ? 'Saving…' : 'Save'}
             </button>
@@ -122,7 +122,7 @@ export function EvidenceCard({
           </div>
         </div>
       ) : (
-        <p className="text-sm text-gray-600 mt-2 leading-relaxed">{doc.summary}</p>
+        <p className="text-sm text-muted mt-2 leading-relaxed">{doc.summary}</p>
       )}
 
       <div className="flex flex-wrap gap-3 mt-3">

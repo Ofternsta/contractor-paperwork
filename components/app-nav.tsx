@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import type { UserAccess } from '@/lib/roles'
 
 type AppNavProps = {
@@ -9,6 +10,7 @@ type AppNavProps = {
 }
 
 export function AppNav({ access }: AppNavProps) {
+  const pathname = usePathname()
   const [platformOwner, setPlatformOwner] = useState(false)
 
   useEffect(() => {
@@ -18,42 +20,28 @@ export function AppNav({ access }: AppNavProps) {
       .catch(() => setPlatformOwner(false))
   }, [])
 
+  function pill(href: string, label: string) {
+    const active = pathname === href || pathname.startsWith(`${href}/`)
+    return (
+      <Link
+        href={href}
+        className={active ? 'nav-pill-active' : 'nav-pill'}
+      >
+        {label}
+      </Link>
+    )
+  }
+
   return (
     <nav className="flex flex-wrap gap-2 text-sm">
-      <Link
-        href="/projects"
-        className="px-3 py-2 rounded-lg bg-gray-100 font-medium min-h-[40px] inline-flex items-center"
-      >
-        Projects
-      </Link>
-      {access.canManageSchedule && (
-        <Link
-          href="/calendar"
-          className="px-3 py-2 rounded-lg bg-gray-100 font-medium min-h-[40px] inline-flex items-center"
-        >
-          Calendar
-        </Link>
-      )}
-      {access.canViewAnalytics && (
-        <Link
-          href="/dashboard"
-          className="px-3 py-2 rounded-lg bg-gray-100 font-medium min-h-[40px] inline-flex items-center"
-        >
-          Analytics
-        </Link>
-      )}
-      {access.canManageBilling && (
-        <Link
-          href="/settings/billing"
-          className="px-3 py-2 rounded-lg bg-gray-100 font-medium min-h-[40px] inline-flex items-center"
-        >
-          Billing
-        </Link>
-      )}
+      {pill('/projects', 'Projects')}
+      {access.canManageSchedule && pill('/calendar', 'Calendar')}
+      {access.canViewAnalytics && pill('/dashboard', 'Analytics')}
+      {access.canManageBilling && pill('/settings/billing', 'Billing')}
       {platformOwner && (
         <Link
           href="/settings/users"
-          className="px-3 py-2 rounded-lg bg-red-50 text-red-900 border border-red-100 font-medium min-h-[40px] inline-flex items-center"
+          className="nav-pill border-red-900/50 text-red-300 hover:border-red-500/50"
         >
           Accounts
         </Link>

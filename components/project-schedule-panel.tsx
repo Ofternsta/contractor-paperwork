@@ -141,25 +141,25 @@ export function ProjectSchedulePanel({ projectId, claimId, canEdit }: Props) {
   const done = events.filter((e) => e.completed_at)
 
   return (
-    <section className="border border-gray-200 rounded-xl p-4 bg-white space-y-3">
+    <section className="border border-border rounded-xl p-4 bg-surface-elevated space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 className="font-bold text-lg">Schedule &amp; calendar</h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-muted mt-1">
             Inspections, deadlines, reminders, insurance follow-ups, and worker
             assignments.
           </p>
         </div>
         <Link
           href="/calendar"
-          className="text-sm font-medium text-blue-700 min-h-[44px] inline-flex items-center"
+          className="text-sm font-medium text-brand-bright min-h-[44px] inline-flex items-center"
         >
           Org calendar →
         </Link>
       </div>
 
       {error && (
-        <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg p-2">
+        <p className="text-sm alert-error rounded-lg p-2">
           {error}
         </p>
       )}
@@ -168,18 +168,18 @@ export function ProjectSchedulePanel({ projectId, claimId, canEdit }: Props) {
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className="text-sm font-medium border border-gray-300 rounded-xl px-4 py-2 min-h-[44px]"
+          className="text-sm font-medium border border-border rounded-xl px-4 py-2 min-h-[44px]"
         >
           {showForm ? 'Cancel' : 'Add event'}
         </button>
       )}
 
       {showForm && canEdit && (
-        <form onSubmit={addEvent} className="space-y-3 border border-gray-100 rounded-xl p-3 bg-gray-50">
+        <form onSubmit={addEvent} className="space-y-3 border border-gray-100 rounded-xl p-3 bg-surface">
           <select
             value={eventType}
             onChange={(e) => setEventType(e.target.value as ScheduleEventType)}
-            className="w-full border border-gray-300 rounded-xl p-3 bg-white"
+            className="w-full border border-border rounded-xl p-3 bg-surface-elevated"
           >
             {SCHEDULE_EVENT_TYPES.map((t) => (
               <option key={t} value={t}>
@@ -192,47 +192,47 @@ export function ProjectSchedulePanel({ projectId, claimId, canEdit }: Props) {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Title"
-            className="w-full border border-gray-300 rounded-xl p-3 bg-white"
+            className="w-full border border-border rounded-xl p-3 bg-surface-elevated"
           />
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Details (optional)"
             rows={2}
-            className="w-full border border-gray-300 rounded-xl p-3 bg-white resize-none"
+            className="w-full border border-border rounded-xl p-3 bg-surface-elevated resize-none"
           />
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-muted">
             Start
             <input
               type="datetime-local"
               required
               value={startsAt}
               onChange={(e) => setStartsAt(e.target.value)}
-              className="mt-1 w-full border border-gray-300 rounded-xl p-3 bg-white"
+              className="mt-1 w-full border border-border rounded-xl p-3 bg-surface-elevated"
             />
           </label>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-muted">
             End (optional)
             <input
               type="datetime-local"
               value={endsAt}
               onChange={(e) => setEndsAt(e.target.value)}
-              className="mt-1 w-full border border-gray-300 rounded-xl p-3 bg-white"
+              className="mt-1 w-full border border-border rounded-xl p-3 bg-surface-elevated"
             />
           </label>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-muted">
             Reminder (optional)
             <input
               type="datetime-local"
               value={reminderAt}
               onChange={(e) => setReminderAt(e.target.value)}
-              className="mt-1 w-full border border-gray-300 rounded-xl p-3 bg-white"
+              className="mt-1 w-full border border-border rounded-xl p-3 bg-surface-elevated"
             />
           </label>
           <select
             value={assignedUserId}
             onChange={(e) => setAssignedUserId(e.target.value)}
-            className="w-full border border-gray-300 rounded-xl p-3 bg-white"
+            className="w-full border border-border rounded-xl p-3 bg-surface-elevated"
           >
             <option value="">Unassigned</option>
             {roster.map((m) => (
@@ -244,7 +244,7 @@ export function ProjectSchedulePanel({ projectId, claimId, canEdit }: Props) {
           <button
             type="submit"
             disabled={saving}
-            className="w-full bg-black text-white py-3 rounded-xl font-medium disabled:opacity-50"
+            className="w-full btn-primary text-[#052e16] py-3 rounded-xl font-medium disabled:opacity-50"
           >
             {saving ? 'Saving…' : 'Save event'}
           </button>
@@ -252,13 +252,13 @@ export function ProjectSchedulePanel({ projectId, claimId, canEdit }: Props) {
       )}
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading schedule…</p>
+        <p className="text-sm text-muted-dim">Loading schedule…</p>
       ) : (
         <>
           <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Upcoming</h3>
+            <h3 className="text-sm font-semibold text-muted mb-2">Upcoming</h3>
             {upcoming.length === 0 ? (
-              <p className="text-sm text-gray-500">No upcoming events.</p>
+              <p className="text-sm text-muted-dim">No upcoming events.</p>
             ) : (
               <ul className="space-y-2">
                 {upcoming.map((ev) => (
@@ -268,25 +268,25 @@ export function ProjectSchedulePanel({ projectId, claimId, canEdit }: Props) {
                   >
                     <div className="flex justify-between gap-2">
                       <span className="font-semibold">{ev.title}</span>
-                      <span className="text-xs text-gray-500 shrink-0">
+                      <span className="text-xs text-muted-dim shrink-0">
                         {SCHEDULE_EVENT_LABELS[ev.event_type]}
                       </span>
                     </div>
-                    <p className="text-gray-600 mt-1">{formatWhen(ev.starts_at)}</p>
+                    <p className="text-muted mt-1">{formatWhen(ev.starts_at)}</p>
                     {ev.reminder_at && (
                       <p className="text-xs text-amber-800 mt-1">
                         Reminder: {formatWhen(ev.reminder_at)}
                       </p>
                     )}
                     {ev.assigned_user_id && (
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-muted-dim mt-1">
                         Assigned:{' '}
                         {roster.find((r) => r.id === ev.assigned_user_id)?.label ||
                           'Team member'}
                       </p>
                     )}
                     {ev.description && (
-                      <p className="text-gray-600 mt-1">{ev.description}</p>
+                      <p className="text-muted mt-1">{ev.description}</p>
                     )}
                     {canEdit && (
                       <button
@@ -304,7 +304,7 @@ export function ProjectSchedulePanel({ projectId, claimId, canEdit }: Props) {
           </div>
           {done.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Completed</h3>
+              <h3 className="text-sm font-semibold text-muted mb-2">Completed</h3>
               <ul className="space-y-2 opacity-75">
                 {done.map((ev) => (
                   <li

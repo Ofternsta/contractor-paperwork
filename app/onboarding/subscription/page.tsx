@@ -201,7 +201,7 @@ function SubscriptionOnboardingContent() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="subscription-title"
-        className="w-full max-w-lg max-h-[90dvh] overflow-y-auto bg-white rounded-2xl shadow-2xl border border-gray-200"
+        className="w-full max-w-lg max-h-[90dvh] overflow-y-auto bg-surface-elevated rounded-2xl shadow-2xl border border-border"
       >
         <div className="p-6 sm:p-8 space-y-5">
           <div className="text-center">
@@ -211,9 +211,9 @@ function SubscriptionOnboardingContent() {
             <h1 id="subscription-title" className="text-xl font-bold">
               {title}
             </h1>
-            <p className="text-sm text-gray-600 mt-2">{subtitle}</p>
+            <p className="text-sm text-muted mt-2">{subtitle}</p>
             {isRegister && draft && (
-              <p className="text-xs text-gray-500 mt-1">{draft.email}</p>
+              <p className="text-xs text-muted-dim mt-1">{draft.email}</p>
             )}
           </div>
 
@@ -248,7 +248,7 @@ function SubscriptionOnboardingContent() {
             type="button"
             onClick={continueWithPlan}
             disabled={loading || !selected}
-            className="w-full bg-black text-white py-4 rounded-xl font-medium disabled:opacity-50 min-h-[52px]"
+            className="w-full btn-primary text-[#052e16] py-4 rounded-xl font-medium disabled:opacity-50 min-h-[52px]"
           >
             {loading
               ? 'Please wait…'
@@ -261,7 +261,7 @@ function SubscriptionOnboardingContent() {
                   : 'Continue to payment'}
           </button>
 
-          <p className="text-xs text-center text-gray-500">
+          <p className="text-xs text-center text-muted-dim">
             {isRegister
               ? 'Trial adds a card on file (no charge for 7 days). One trial per email and per card. Account is created after Stripe verification.'
               : 'Paid plans use secure Stripe Checkout.'}
@@ -270,7 +270,7 @@ function SubscriptionOnboardingContent() {
           {isRegister ? (
             <Link
               href="/login"
-              className="block w-full text-center text-sm text-gray-500 py-2 min-h-[44px]"
+              className="block w-full text-center text-sm text-muted-dim py-2 min-h-[44px]"
             >
               Back to sign up
             </Link>
@@ -278,7 +278,7 @@ function SubscriptionOnboardingContent() {
             <button
               type="button"
               onClick={signOut}
-              className="w-full text-sm text-gray-500 py-2 min-h-[44px]"
+              className="w-full text-sm text-muted-dim py-2 min-h-[44px]"
             >
               Sign out
             </button>

@@ -62,9 +62,9 @@ export function ProjectClientPanel({ projectId }: { projectId: string }) {
   }, [projectId])
 
   return (
-    <section className="border border-gray-200 rounded-xl p-4 bg-white space-y-3">
+    <section className="border border-border rounded-xl p-4 bg-surface-elevated space-y-3">
       <h2 className="font-bold text-lg">Client access</h2>
-      <p className="text-sm text-gray-600 leading-relaxed">
+      <p className="text-sm text-muted leading-relaxed">
         Clients must sign up as <strong>Client</strong> and use this email. You
         grant <strong>one-time view access</strong> to this project only (evidence
         and invoices — not internal team messages).
@@ -77,12 +77,12 @@ export function ProjectClientPanel({ projectId }: { projectId: string }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="client@email.com"
-          className="border border-gray-300 rounded-xl p-3 flex-1"
+          className="border border-border rounded-xl p-3 flex-1"
         />
         <button
           type="submit"
           disabled={saving}
-          className="bg-black text-white px-4 py-3 rounded-xl font-medium min-h-[48px] disabled:opacity-50 shrink-0"
+          className="btn-primary text-[#052e16] px-4 py-3 rounded-xl font-medium min-h-[48px] disabled:opacity-50 shrink-0"
         >
           {saving ? '…' : 'Grant access'}
         </button>
@@ -93,9 +93,9 @@ export function ProjectClientPanel({ projectId }: { projectId: string }) {
       )}
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-muted-dim">Loading…</p>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-gray-500">No clients have access yet.</p>
+        <p className="text-sm text-muted-dim">No clients have access yet.</p>
       ) : (
         <ul className="space-y-2">
           {rows.map((r) => (

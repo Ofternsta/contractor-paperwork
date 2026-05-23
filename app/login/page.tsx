@@ -12,6 +12,7 @@ import {
 import type { AppRole } from '@/lib/roles'
 import { passwordResetRedirectUrl } from '@/lib/auth-redirect'
 import { supabase } from '@/lib/supabase'
+import { BrandLogo } from '@/components/brand-logo'
 import {
   finishAccountSetup,
   getAccountSetupStatus,
@@ -432,25 +433,22 @@ export default function LoginPage() {
     <div className="min-h-dvh flex flex-col safe-top safe-bottom">
       <main className="flex-1 flex flex-col justify-center safe-x px-4 py-8 max-w-md mx-auto w-full">
         <div className="mb-8 text-center">
-          <p className="text-4xl mb-3" aria-hidden>
-            📋
-          </p>
-          <h1 className="text-2xl font-bold">LedgerStack</h1>
-          <p className="text-gray-600 mt-2 text-sm">
+          <BrandLogo href="/" size="lg" className="mx-auto" />
+          <p className="text-muted mt-4 text-sm">
             Sign in to manage projects and claim evidence
           </p>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="border border-gray-200 rounded-xl p-5 bg-gray-50 space-y-4"
+          className="card-elevated p-5 space-y-4"
         >
           {mode === 'forgot' ? (
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-muted">
               Enter your account email. We&apos;ll send a link to reset your password.
             </p>
           ) : (
-            <div className="flex rounded-xl bg-white border border-gray-200 p-1">
+            <div className="flex rounded-xl bg-surface border border-border p-1">
               <button
                 type="button"
                 onClick={() => {
@@ -458,7 +456,7 @@ export default function LoginPage() {
                   setMessage(null)
                 }}
                 className={`flex-1 py-2 rounded-lg text-sm font-medium min-h-[44px] ${
-                  mode === 'signin' ? 'bg-black text-white' : 'text-gray-600'
+                  mode === 'signin' ? 'btn-primary' : 'text-muted'
                 }`}
               >
                 Sign in
@@ -470,7 +468,7 @@ export default function LoginPage() {
                   setMessage(null)
                 }}
                 className={`flex-1 py-2 rounded-lg text-sm font-medium min-h-[44px] ${
-                  mode === 'signup' ? 'bg-black text-white' : 'text-gray-600'
+                  mode === 'signup' ? 'btn-primary' : 'text-muted'
                 }`}
               >
                 Sign up
@@ -481,7 +479,7 @@ export default function LoginPage() {
           {mode === 'signup' && (
             <>
               <div>
-                <span className="block text-sm font-medium text-gray-700 mb-2">
+                <span className="block text-sm font-medium text-muted mb-2">
                   Account type
                 </span>
                 <div className="grid grid-cols-1 gap-2">
@@ -496,8 +494,8 @@ export default function LoginPage() {
                       key={value}
                       className={`flex gap-3 p-3 rounded-xl border cursor-pointer ${
                         role === value
-                          ? 'border-black bg-white'
-                          : 'border-gray-200 bg-white'
+                          ? 'border-brand bg-surface-elevated ring-1 ring-brand/40'
+                          : 'border-border bg-surface'
                       }`}
                     >
                       <input
@@ -510,7 +508,7 @@ export default function LoginPage() {
                       />
                       <span>
                         <span className="font-medium block">{label}</span>
-                        <span className="text-xs text-gray-600">{hint}</span>
+                        <span className="text-xs text-muted">{hint}</span>
                       </span>
                     </label>
                   ))}
@@ -520,7 +518,7 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="fullName"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-muted mb-1"
                 >
                   Your name
                 </label>
@@ -529,7 +527,7 @@ export default function LoginPage() {
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="border border-gray-300 rounded-xl p-3 w-full bg-white"
+                  className="input-field"
                   placeholder="Jane Contractor"
                 />
               </div>
@@ -538,7 +536,7 @@ export default function LoginPage() {
                 <div>
                   <label
                     htmlFor="orgName"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-muted mb-1"
                   >
                     Company / organization name
                   </label>
@@ -547,10 +545,10 @@ export default function LoginPage() {
                     type="text"
                     value={organizationName}
                     onChange={(e) => setOrganizationName(e.target.value)}
-                    className="border border-gray-300 rounded-xl p-3 w-full bg-white"
+                    className="input-field"
                     placeholder="Acme Restoration"
                   />
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-xs text-muted-dim mt-2">
                     Next step: choose a subscription plan, then your account is
                     created.
                   </p>
@@ -561,7 +559,7 @@ export default function LoginPage() {
                 <div className="space-y-2">
                   <label
                     htmlFor="inviteCode"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-muted mb-1"
                   >
                     Company invite code (from your admin)
                   </label>
@@ -579,19 +577,19 @@ export default function LoginPage() {
                       setInviteCompany(null)
                     }}
                     onBlur={() => verifyInvite(inviteCode)}
-                    className="border border-gray-300 rounded-xl p-3 w-full bg-white uppercase tracking-[0.2em] font-mono text-center"
+                    className="input-field uppercase tracking-[0.2em] font-mono text-center"
                     placeholder="8 characters"
                     autoComplete="off"
                   />
                   {inviteChecking && (
-                    <p className="text-sm text-gray-500">Checking code…</p>
+                    <p className="text-sm text-muted-dim">Checking code…</p>
                   )}
                   {inviteValid && inviteCompany && (
-                    <p className="text-sm text-green-800 bg-green-50 border border-green-100 rounded-lg p-2">
+                    <p className="text-sm alert-success">
                       Joining <strong>{inviteCompany}</strong>
                     </p>
                   )}
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-dim">
                     Codes are auto-generated when a company signs up as admin. You
                     cannot join without a valid code.
                   </p>
@@ -603,7 +601,7 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium text-muted mb-1"
             >
               Email
             </label>
@@ -614,7 +612,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="border border-gray-300 rounded-xl p-3 w-full bg-white"
+              className="input-field"
               placeholder="you@company.com"
             />
           </div>
@@ -624,7 +622,7 @@ export default function LoginPage() {
               <div className="flex items-center justify-between gap-2 mb-1">
                 <label
                   htmlFor="password"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-muted"
                 >
                   Password
                 </label>
@@ -636,7 +634,7 @@ export default function LoginPage() {
                       setMessage(null)
                       setPassword('')
                     }}
-                    className="text-sm text-gray-600 underline min-h-[44px]"
+                    className="text-sm text-muted underline min-h-[44px]"
                   >
                     Forgot password?
                   </button>
@@ -652,7 +650,7 @@ export default function LoginPage() {
                 minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="border border-gray-300 rounded-xl p-3 w-full bg-white"
+                className="input-field"
                 placeholder="At least 6 characters"
               />
             </div>
@@ -662,7 +660,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-muted mb-1"
               >
                 Confirm password
               </label>
@@ -674,7 +672,7 @@ export default function LoginPage() {
                 minLength={6}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="border border-gray-300 rounded-xl p-3 w-full bg-white"
+                className="input-field"
                 placeholder="Re-enter password"
               />
             </div>
@@ -690,8 +688,8 @@ export default function LoginPage() {
                 message.includes('sent') ||
                 message.includes('inbox') ||
                 message.includes('updated')
-                  ? 'text-green-800 bg-green-50 border border-green-100 rounded-lg p-3'
-                  : 'text-red-700 bg-red-50 border border-red-100 rounded-lg p-3'
+                  ? 'alert-success'
+                  : 'alert-error'
               }`}
             >
               {message}
@@ -703,7 +701,7 @@ export default function LoginPage() {
               type="button"
               disabled={resendingEmail || !email.trim()}
               onClick={handleResendVerification}
-              className="w-full border border-gray-300 text-gray-900 py-3 rounded-xl font-medium disabled:opacity-50 min-h-[48px]"
+              className="w-full btn-secondary py-3 font-medium disabled:opacity-50 min-h-[48px]"
             >
               {resendingEmail ? 'Sending…' : 'Resend verification email'}
             </button>
@@ -716,7 +714,7 @@ export default function LoginPage() {
                 setMode('signin')
                 setMessage(null)
               }}
-              className="w-full border border-gray-300 text-gray-900 py-3 rounded-xl font-medium min-h-[48px]"
+              className="w-full btn-secondary py-3 font-medium min-h-[48px]"
             >
               Back to sign in
             </button>
@@ -732,7 +730,7 @@ export default function LoginPage() {
               (mode === 'signup' && !confirmPassword) ||
               (mode === 'signup' && role === 'worker' && !inviteValid)
             }
-            className="w-full bg-black text-white py-4 rounded-xl font-medium disabled:opacity-50 min-h-[52px]"
+            className="w-full btn-primary py-4 font-semibold disabled:opacity-50 min-h-[52px]"
           >
             {loading
               ? 'Please wait…'

@@ -60,7 +60,7 @@ export function EvidenceUpload({
   }
 
   return (
-    <div className="border p-4 rounded-xl bg-gray-50">
+    <div className="border p-4 rounded-xl bg-surface">
       <h2 className="font-bold mb-3 text-lg">Upload Evidence</h2>
 
       <div
@@ -73,10 +73,10 @@ export function EvidenceUpload({
         className={`rounded-xl border-2 border-dashed p-6 mb-4 transition-colors ${
           dragOver
             ? 'border-blue-500 bg-blue-50'
-            : 'border-gray-300 bg-white'
+            : 'border-border bg-surface-elevated'
         }`}
       >
-        <p className="text-center text-sm text-gray-600 mb-3">
+        <p className="text-center text-sm text-muted mb-3">
           Drag and drop files here, or use the buttons below
         </p>
         <button
@@ -103,13 +103,13 @@ export function EvidenceUpload({
             type="button"
             disabled={uploading}
             onClick={handleNativeCamera}
-            className="flex items-center justify-center gap-2 bg-black text-white py-4 px-4 rounded-xl font-medium active:scale-[0.98] transition-transform min-h-[52px] disabled:opacity-50"
+            className="flex items-center justify-center gap-2 btn-primary text-[#052e16] py-4 px-4 rounded-xl font-medium active:scale-[0.98] transition-transform min-h-[52px] disabled:opacity-50"
           >
             <span aria-hidden>📷</span>
             {uploading ? 'Processing…' : 'Take Photo'}
           </button>
         ) : (
-          <label className="flex items-center justify-center gap-2 bg-black text-white py-4 px-4 rounded-xl font-medium cursor-pointer active:scale-[0.98] transition-transform min-h-[52px]">
+          <label className="flex items-center justify-center gap-2 btn-primary text-[#052e16] py-4 px-4 rounded-xl font-medium cursor-pointer active:scale-[0.98] transition-transform min-h-[52px]">
             <span aria-hidden>📷</span>
             {uploading ? 'Processing…' : 'Take Photo'}
             <input
@@ -136,7 +136,7 @@ export function EvidenceUpload({
         </label>
       </div>
 
-      <p className="text-sm text-gray-600 mt-3 leading-relaxed">
+      <p className="text-sm text-muted mt-3 leading-relaxed">
         Photos, PDFs, Word docs, videos — up to 50 MB. OCR and AI categorize and
         summarize automatically.
       </p>
@@ -152,7 +152,7 @@ export function EvidenceUpload({
           className={`mt-3 text-sm leading-relaxed ${
             uploadMessage.startsWith('Uploaded')
               ? 'text-green-800'
-              : 'text-red-700'
+              : 'text-red-400'
           }`}
         >
           {uploadMessage}

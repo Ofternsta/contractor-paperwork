@@ -164,7 +164,7 @@ export default function ProjectsPage() {
   if (accessLoading) {
     return (
       <div className="min-h-dvh flex items-center justify-center">
-        <p className="text-gray-600">Loading…</p>
+        <p className="text-muted">Loading…</p>
       </div>
     )
   }
@@ -190,7 +190,7 @@ export default function ProjectsPage() {
           signingOut={signingOut}
         />
         <main className="flex-1 safe-x px-4 py-8 max-w-lg mx-auto text-center space-y-4">
-          <p className="text-gray-600 leading-relaxed">
+          <p className="text-muted leading-relaxed">
             Your admin must approve you <strong>one time</strong> before you
             can view or add to projects. Ask them to open the app and tap
             Approve on your request.
@@ -198,7 +198,7 @@ export default function ProjectsPage() {
           <button
             type="button"
             onClick={() => refreshAccess().then(() => fetchProjects())}
-            className="bg-black text-white px-6 py-3 rounded-xl font-medium min-h-[48px]"
+            className="btn-primary text-[#052e16] px-6 py-3 rounded-xl font-medium min-h-[48px]"
           >
             Check again
           </button>
@@ -212,7 +212,7 @@ export default function ProjectsPage() {
       <div className="min-h-dvh flex flex-col">
         <AppHeader title="No organization" onSignOut={signOut} signingOut={signingOut} />
         <main className="flex-1 safe-x px-4 py-8 max-w-lg mx-auto text-center space-y-4">
-          <p className="text-gray-600">
+          <p className="text-muted">
             Sign up again with a valid organization invite code from your admin.
           </p>
         </main>
@@ -233,7 +233,7 @@ export default function ProjectsPage() {
         <AppNav access={access} />
 
         {access.planName && (
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-muted">
             Plan: <strong>{access.planName}</strong>
             {!isUnlimited(access.aiSummariesLimit) && (
               <>
@@ -258,25 +258,25 @@ export default function ProjectsPage() {
         )}
 
         {access.canCreateProject && (
-          <section className="border border-gray-200 rounded-xl p-4 bg-gray-50 space-y-3">
+          <section className="border border-border rounded-xl p-4 bg-surface space-y-3">
             <h2 className="font-bold text-lg">New project</h2>
 
             <input
-              className="border border-gray-300 rounded-xl p-3 w-full"
+              className="border border-border rounded-xl p-3 w-full"
               placeholder="Customer name"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
             />
 
             <input
-              className="border border-gray-300 rounded-xl p-3 w-full"
+              className="border border-border rounded-xl p-3 w-full"
               placeholder="Project address"
               value={projectAddress}
               onChange={(e) => setProjectAddress(e.target.value)}
             />
 
             <textarea
-              className="border border-gray-300 rounded-xl p-3 w-full min-h-[88px]"
+              className="border border-border rounded-xl p-3 w-full min-h-[88px]"
               placeholder="Notes (optional)"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -288,7 +288,7 @@ export default function ProjectsPage() {
               disabled={
                 creating || !customerName.trim() || !projectAddress.trim()
               }
-              className="w-full bg-black text-white py-4 rounded-xl font-medium disabled:opacity-50 min-h-[52px]"
+              className="w-full btn-primary text-[#052e16] py-4 rounded-xl font-medium disabled:opacity-50 min-h-[52px]"
             >
               {creating ? 'Creating…' : 'Create Project'}
             </button>
@@ -296,7 +296,7 @@ export default function ProjectsPage() {
         )}
 
         {access.role === 'client' && (
-          <p className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded-xl p-3">
+          <p className="text-sm text-muted bg-blue-50 border border-blue-100 rounded-xl p-3">
             You can only open projects your contractor has granted to your email.
           </p>
         )}
@@ -307,7 +307,7 @@ export default function ProjectsPage() {
           </h2>
 
           {projects.length === 0 && (
-            <p className="text-gray-500 text-center py-6">
+            <p className="text-muted-dim text-center py-6">
               {access.role === 'client'
                 ? 'No projects shared with you yet. Ask your contractor admin to grant access using your signup email.'
                 : 'No projects yet. Create one above.'}
@@ -318,14 +318,14 @@ export default function ProjectsPage() {
             {projects.map((p) => (
               <li
                 key={p.id}
-                className="border border-gray-200 rounded-xl bg-white shadow-sm overflow-hidden"
+                className="border border-border rounded-xl bg-surface-elevated shadow-sm overflow-hidden"
               >
                 <Link
                   href={`/project/${p.id}`}
-                  className="block p-4 active:bg-gray-50 min-h-[64px]"
+                  className="block p-4 active:bg-surface min-h-[64px]"
                 >
                   <p className="font-bold text-lg">{p.customer_name}</p>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-muted mt-1">
                     {p.project_address}
                   </p>
                 </Link>
@@ -334,7 +334,7 @@ export default function ProjectsPage() {
                     type="button"
                     onClick={() => removeProject(p)}
                     disabled={deletingId === p.id}
-                    className="w-full border-t border-red-100 py-3 text-red-700 text-sm font-semibold disabled:opacity-50 min-h-[48px] active:bg-red-50"
+                    className="w-full border-t border-red-900/40 py-3 text-red-400 text-sm font-semibold disabled:opacity-50 min-h-[48px] active:bg-red-50"
                   >
                     {deletingId === p.id ? 'Deleting…' : 'Delete project'}
                   </button>

@@ -63,7 +63,7 @@ export default function DashboardPage() {
   if (!access) {
     return (
       <div className="min-h-dvh flex items-center justify-center">
-        <p className="text-gray-600">Loading…</p>
+        <p className="text-muted">Loading…</p>
       </div>
     )
   }
@@ -83,7 +83,7 @@ export default function DashboardPage() {
         <AppNav access={access} />
 
         {error && (
-          <p className="text-sm text-red-700 border border-red-200 bg-red-50 p-3 rounded-xl">
+          <p className="text-sm text-red-400 border border-red-200 bg-red-50 p-3 rounded-xl">
             {error}
             {error.includes('relation') && (
               <span className="block mt-2">
@@ -105,15 +105,15 @@ export default function DashboardPage() {
               ].map((card) => (
                 <div
                   key={card.label}
-                  className="border rounded-xl p-4 bg-white shadow-sm text-center"
+                  className="border rounded-xl p-4 bg-surface-elevated shadow-sm text-center"
                 >
                   <p className="text-2xl font-bold">{card.value}</p>
-                  <p className="text-xs text-gray-600 mt-1">{card.label}</p>
+                  <p className="text-xs text-muted mt-1">{card.label}</p>
                 </div>
               ))}
             </div>
 
-            <section className="border rounded-xl p-4 bg-gray-50">
+            <section className="border rounded-xl p-4 bg-surface">
               <h2 className="font-bold mb-2">Subscription</h2>
               <p className="text-sm capitalize">
                 {stats.subscription.plan} — {stats.subscription.status}
@@ -125,7 +125,7 @@ export default function DashboardPage() {
               )}
               <Link
                 href="/settings/billing"
-                className="inline-block mt-3 text-sm text-blue-700 font-medium"
+                className="inline-block mt-3 text-sm text-brand-bright font-medium"
               >
                 Manage billing →
               </Link>
@@ -162,10 +162,10 @@ export default function DashboardPage() {
                   <li key={p.id}>
                     <Link
                       href={`/project/${p.id}`}
-                      className="block border rounded-xl p-3 active:bg-gray-50"
+                      className="block border rounded-xl p-3 active:bg-surface"
                     >
                       <p className="font-medium">{p.customer_name}</p>
-                      <p className="text-sm text-gray-600">{p.project_address}</p>
+                      <p className="text-sm text-muted">{p.project_address}</p>
                     </Link>
                   </li>
                 ))}

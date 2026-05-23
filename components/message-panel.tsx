@@ -101,29 +101,29 @@ export function MessagePanel({
   }
 
   return (
-    <section className="border border-gray-200 rounded-xl p-4 bg-white space-y-3">
+    <section className="border border-border rounded-xl p-4 bg-surface-elevated space-y-3">
       <div>
         <h2 className="font-bold text-lg">{title}</h2>
-        <p className="text-sm text-gray-600 mt-1 leading-relaxed">{subtitle}</p>
+        <p className="text-sm text-muted mt-1 leading-relaxed">{subtitle}</p>
       </div>
 
       {error && (
-        <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg p-2">
+        <p className="text-sm alert-error rounded-lg p-2">
           {error}
         </p>
       )}
 
       <div
         ref={listRef}
-        className="border border-gray-100 rounded-xl bg-gray-50 p-3 max-h-[280px] overflow-y-auto space-y-3 min-h-[120px]"
+        className="border border-gray-100 rounded-xl bg-surface p-3 max-h-[280px] overflow-y-auto space-y-3 min-h-[120px]"
         aria-live="polite"
       >
         {loading && (
-          <p className="text-sm text-gray-500 text-center py-4">Loading messages…</p>
+          <p className="text-sm text-muted-dim text-center py-4">Loading messages…</p>
         )}
 
         {!loading && messages.length === 0 && (
-          <p className="text-sm text-gray-500 text-center py-4">
+          <p className="text-sm text-muted-dim text-center py-4">
             No messages yet. Start the conversation.
           </p>
         )}
@@ -138,13 +138,13 @@ export function MessagePanel({
               <div
                 className={`max-w-[85%] rounded-xl px-3 py-2 ${
                   mine
-                    ? 'bg-black text-white'
-                    : 'bg-white border border-gray-200 text-gray-900'
+                    ? 'btn-primary text-[#052e16]'
+                    : 'bg-surface-elevated border border-border text-foreground'
                 }`}
               >
                 <p
                   className={`text-xs font-medium mb-1 ${
-                    mine ? 'text-gray-300' : 'text-gray-500'
+                    mine ? 'text-[#052e16]/70' : 'text-muted-dim'
                   }`}
                 >
                   {m.sender_label}
@@ -154,7 +154,7 @@ export function MessagePanel({
                 </p>
                 <p
                   className={`text-[10px] mt-1 ${
-                    mine ? 'text-gray-400' : 'text-gray-400'
+                    mine ? 'text-[#052e16]/60' : 'text-muted-dim'
                   }`}
                 >
                   {new Date(m.created_at).toLocaleString()}
@@ -172,7 +172,7 @@ export function MessagePanel({
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Type a message…"
             rows={2}
-            className="flex-1 border border-gray-300 rounded-xl p-3 text-sm resize-none"
+            className="input-field flex-1 text-sm resize-none min-h-[48px]"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
@@ -184,21 +184,21 @@ export function MessagePanel({
             type="button"
             disabled={sending || !draft.trim()}
             onClick={send}
-            className="bg-black text-white px-4 py-3 rounded-xl font-medium text-sm min-h-[48px] disabled:opacity-50 sm:self-end"
+            className="btn-primary text-[#052e16] px-4 py-3 rounded-xl font-medium text-sm min-h-[48px] disabled:opacity-50 sm:self-end"
           >
             {sending ? 'Sending…' : 'Send'}
           </button>
         </div>
       ) : (
         readOnlyHint && (
-          <p className="text-xs text-gray-500">{readOnlyHint}</p>
+          <p className="text-xs text-muted-dim">{readOnlyHint}</p>
         )
       )}
 
       <button
         type="button"
         onClick={load}
-        className="text-xs text-blue-700 font-medium min-h-[40px]"
+        className="text-xs text-brand-bright font-medium min-h-[40px]"
       >
         Refresh messages
       </button>

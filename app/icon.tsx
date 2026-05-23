@@ -11,18 +11,27 @@ export default function Icon() {
           width: '100%',
           height: '100%',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#171717',
-          color: '#ffffff',
-          fontSize: 48,
-          fontWeight: 700,
-          letterSpacing: -2,
+          background: '#050505',
         }}
       >
-        <div style={{ fontSize: 120, marginBottom: 8 }}>📋</div>
-        CP
+        <div
+          style={{
+            width: 380,
+            height: 380,
+            borderRadius: 48,
+            background: 'linear-gradient(180deg, #4ade80 0%, #22c55e 50%, #16a34a 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 200,
+            fontWeight: 800,
+            color: '#052e16',
+          }}
+        >
+          L
+        </div>
       </div>
     ),
     { ...size }
