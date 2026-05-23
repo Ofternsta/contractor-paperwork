@@ -12,8 +12,9 @@
 
 1. `supabase/roles-and-orgs.sql` — profiles, organizations, RLS on projects/claims
 2. `supabase/platform-security.sql` — storage RLS, subscriptions, invoices, timelines, claim updates
-3. `supabase/account-role-fix.sql` — lets workers convert to admin (wrong signup)
-4. `supabase/messaging.sql` — admin↔worker team chat and project messages with clients
+3. `supabase/billing-pending-status.sql` — if subscriptions already exist, adds `pending` status for checkout
+4. `supabase/account-role-fix.sql` — lets workers convert to admin (wrong signup)
+5. `supabase/messaging.sql` — admin↔worker team chat and project messages with clients
 
 ### Worker signup (company invite code)
 
@@ -56,7 +57,7 @@ Full Stripe Dashboard steps: **`STRIPE.md`**
 - **AI**: Claim summary, timeline (`/api/claim-summary`, `/api/claim-timeline`), evidence categorization
 - **Export**: PDF via jsPDF (`npm install`), HTML fallback for print-to-PDF
 - **Dashboard**: `/dashboard` (admin) — project/claim/evidence stats
-- **Billing**: `/settings/billing` (admin) — trial/starter/pro/enterprise; Stripe Checkout + webhook
+- **Billing**: Admins **choose a plan at signup** (trial/starter/pro/enterprise); paid plans use Stripe Checkout + webhook; no automatic trial
 
 ## Install dependencies
 

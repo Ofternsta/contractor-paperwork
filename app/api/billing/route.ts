@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
-import Stripe from 'stripe'
+import {
+  parseBillingPlan,
+  setupAdminSubscription,
+} from '@/lib/admin-billing-setup'
 import { requireAuth } from '@/lib/require-auth'
 import {
   BILLING_PLANS,
   type BillingPlanId,
-  billingAppUrl,
   isStripeConfigured,
-  stripePriceIds,
 } from '@/lib/stripe-config'
 
 export async function GET() {
@@ -47,13 +48,13 @@ export async function GET() {
       .select('*', { count: 'exact', head: true })
       .eq('organization_id', org.id)
 
+    const needsPlanSelection =
+      !sub || (sub.status === 'pending' && sub.plan !== 'trial')
+
     return NextResponse.json({
       plans: BILLING_PLANS,
-      subscription: sub || {
-        plan: 'trial',
-        status: 'trialing',
-        organization_id: org.id,
-      },
+      subscription: sub,
+      needsPlanSelection,
       projectCount: projectCount ?? 0,
       stripeConfigured: isStripeConfigured(),
     })
@@ -80,12 +81,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Admin only' }, { status: 403 })
     }
 
-    const { plan } = await req.json()
-    if (!plan || !(plan in BILLING_PLANS)) {
+    const { plan: planRaw } = await req.json()
+    const planId = parseBillingPlan(planRaw)
+
+    if (!planId) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
     }
-
-    const planId = plan as BillingPlanId
 
     const { data: org } = await supabase
       .from('organizations')
@@ -97,74 +98,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No organization' }, { status: 404 })
     }
 
-    const stripeKey = process.env.STRIPE_SECRET_KEY
-    const priceMap = stripePriceIds()
+    const billing = await setupAdminSubscription(supabase, {
+      organizationId: org.id,
+      email: user.email,
+      plan: planId,
+    })
 
-    if (planId !== 'trial' && stripeKey && priceMap[planId]) {
-      const stripe = new Stripe(stripeKey)
-
-      const { data: existing } = await supabase
-        .from('subscriptions')
-        .select('stripe_customer_id')
-        .eq('organization_id', org.id)
-        .maybeSingle()
-
-      let customerId = existing?.stripe_customer_id
-
-      if (!customerId) {
-        const customer = await stripe.customers.create({
-          email: user.email,
-          metadata: { organization_id: org.id },
-        })
-        customerId = customer.id
-      }
-
-      const appUrl = billingAppUrl()
-      const session = await stripe.checkout.sessions.create({
-        customer: customerId,
-        mode: 'subscription',
-        line_items: [{ price: priceMap[planId]!, quantity: 1 }],
-        success_url: `${appUrl}/settings/billing?success=1`,
-        cancel_url: `${appUrl}/settings/billing?canceled=1`,
-        metadata: { organization_id: org.id, plan: planId },
-        subscription_data: {
-          metadata: { organization_id: org.id, plan: planId },
-        },
-      })
-
-      await supabase.from('subscriptions').upsert(
-        {
-          organization_id: org.id,
-          plan: planId,
-          status: 'trialing',
-          stripe_customer_id: customerId,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'organization_id' }
-      )
-
-      return NextResponse.json({ checkoutUrl: session.url })
+    if (billing.error) {
+      const status =
+        billing.error.includes('Stripe') || billing.error.includes('price')
+          ? 503
+          : 400
+      return NextResponse.json({ error: billing.error }, { status })
     }
 
-    if (planId !== 'trial' && !isStripeConfigured()) {
-      return NextResponse.json(
-        {
-          error:
-            'Stripe is not configured. Add STRIPE_SECRET_KEY and price IDs — see STRIPE.md.',
-        },
-        { status: 503 }
-      )
+    if (billing.checkoutUrl) {
+      return NextResponse.json({ checkoutUrl: billing.checkoutUrl })
     }
-
-    await supabase.from('subscriptions').upsert(
-      {
-        organization_id: org.id,
-        plan: planId,
-        status: planId === 'trial' ? 'trialing' : 'active',
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'organization_id' }
-    )
 
     return NextResponse.json({ ok: true, plan: planId })
   } catch (err: unknown) {

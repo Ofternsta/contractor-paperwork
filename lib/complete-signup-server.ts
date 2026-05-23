@@ -8,6 +8,7 @@ export type SignupMetadata = {
   full_name?: string
   organization_name?: string
   invite_code?: string
+  billing_plan?: string
 }
 
 function parseRole(raw: string | undefined): AppRole | null {
@@ -25,7 +26,7 @@ export async function ensureUserProfile(
     organizationName?: string
     inviteCode?: string
   }
-): Promise<{ error: string | null; created: boolean }> {
+): Promise<{ error: string | null; created: boolean; organizationId?: string }> {
   const { data: existing } = await supabase
     .from('profiles')
     .select('id, role')
@@ -33,7 +34,7 @@ export async function ensureUserProfile(
     .maybeSingle()
 
   if (existing) {
-    return { error: null, created: false }
+    return { error: null, created: false, organizationId: undefined }
   }
 
   const role =
@@ -49,7 +50,7 @@ export async function ensureUserProfile(
   })
 
   if (profileError) {
-    return { error: profileError.message, created: false }
+    return { error: profileError.message, created: false, organizationId: undefined }
   }
 
   if (role === 'admin') {
@@ -58,19 +59,29 @@ export async function ensureUserProfile(
       code = generateInviteCode()
     }
 
-    const { error: orgError } = await supabase.from('organizations').insert({
-      admin_user_id: userId,
-      name:
-        overrides?.organizationName?.trim() ||
-        metadata.organization_name?.trim() ||
-        'My Company',
-      invite_code: code,
-    })
+    const { data: org, error: orgError } = await supabase
+      .from('organizations')
+      .insert({
+        admin_user_id: userId,
+        name:
+          overrides?.organizationName?.trim() ||
+          metadata.organization_name?.trim() ||
+          'My Company',
+        invite_code: code,
+      })
+      .select('id')
+      .single()
 
-    if (orgError) {
+    if (orgError || !org) {
       await supabase.from('profiles').delete().eq('id', userId)
-      return { error: orgError.message, created: false }
+      return {
+        error: orgError?.message || 'Could not create organization',
+        created: false,
+        organizationId: undefined,
+      }
     }
+
+    return { error: null, created: true, organizationId: org.id }
   }
 
   if (role === 'worker') {
@@ -81,7 +92,7 @@ export async function ensureUserProfile(
 
     if (!lookup.ok) {
       await supabase.from('profiles').delete().eq('id', userId)
-      return { error: lookup.error, created: false }
+      return { error: lookup.error, created: false, organizationId: undefined }
     }
 
     const { error: memberError } = await supabase
@@ -94,9 +105,9 @@ export async function ensureUserProfile(
 
     if (memberError) {
       await supabase.from('profiles').delete().eq('id', userId)
-      return { error: memberError.message, created: false }
+      return { error: memberError.message, created: false, organizationId: undefined }
     }
   }
 
-  return { error: null, created: true }
+  return { error: null, created: true, organizationId: undefined }
 }

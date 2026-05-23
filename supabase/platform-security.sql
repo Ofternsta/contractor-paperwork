@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id uuid NOT NULL UNIQUE REFERENCES public.organizations (id) ON DELETE CASCADE,
   plan text NOT NULL DEFAULT 'trial' CHECK (plan IN ('trial', 'starter', 'professional', 'enterprise')),
-  status text NOT NULL DEFAULT 'trialing' CHECK (status IN ('trialing', 'active', 'past_due', 'canceled')),
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'trialing', 'active', 'past_due', 'canceled')),
   stripe_customer_id text,
   stripe_subscription_id text,
   current_period_end timestamptz,

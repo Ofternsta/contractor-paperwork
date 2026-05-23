@@ -62,6 +62,20 @@ export default function Home() {
       return null
     }
 
+    if (a?.canManageBilling) {
+      const billingRes = await fetch('/api/billing')
+      const billing = await billingRes.json().catch(() => ({}))
+      if (
+        billingRes.ok &&
+        (billing.needsPlanSelection ||
+          billing.subscription?.status === 'pending')
+      ) {
+        router.push('/settings/billing?setup=1')
+        setAccessLoading(false)
+        return null
+      }
+    }
+
     setAccess(a)
     setAccessLoading(false)
     return a

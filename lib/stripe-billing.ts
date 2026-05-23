@@ -7,7 +7,12 @@ import {
   planFromStripePriceId,
 } from '@/lib/stripe-config'
 
-type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'canceled'
+type SubscriptionStatus =
+  | 'pending'
+  | 'trialing'
+  | 'active'
+  | 'past_due'
+  | 'canceled'
 
 function mapStripeStatus(status: Stripe.Subscription.Status): SubscriptionStatus {
   if (status === 'active') return 'active'

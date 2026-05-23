@@ -16,7 +16,8 @@ type PlanInfo = {
 
 type BillingData = {
   plans: Record<string, PlanInfo>
-  subscription: { plan: string; status: string }
+  subscription: { plan: string; status: string } | null
+  needsPlanSelection?: boolean
   projectCount: number
   stripeConfigured: boolean
 }
@@ -36,7 +37,10 @@ function BillingContent() {
       setMessage('Subscription updated successfully.')
     }
     if (searchParams.get('canceled')) {
-      setMessage('Checkout canceled.')
+      setMessage('Checkout canceled. Select a plan to continue.')
+    }
+    if (searchParams.get('setup')) {
+      setMessage('Choose a subscription plan to use LedgerStack.')
     }
   }, [searchParams])
 
@@ -75,10 +79,17 @@ function BillingContent() {
         </p>
       )}
 
-      <p className="text-sm text-gray-600">
-        Current: <strong className="capitalize">{data.subscription.plan}</strong>{' '}
-        ({data.subscription.status}) · {data.projectCount} project(s)
-      </p>
+      {data.needsPlanSelection || !data.subscription ? (
+        <p className="text-sm text-amber-900 bg-amber-50 border border-amber-100 p-3 rounded-xl">
+          No active subscription yet. Select a plan below to continue.
+        </p>
+      ) : (
+        <p className="text-sm text-gray-600">
+          Current:{' '}
+          <strong className="capitalize">{data.subscription.plan}</strong> (
+          {data.subscription.status}) · {data.projectCount} project(s)
+        </p>
+      )}
 
       {!data.stripeConfigured && (
         <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 p-3 rounded-xl">
@@ -93,7 +104,7 @@ function BillingContent() {
           <div
             key={key}
             className={`border rounded-xl p-4 ${
-              data.subscription.plan === key
+              data.subscription?.plan === key
                 ? 'border-black bg-gray-50'
                 : 'border-gray-200'
             }`}
@@ -110,7 +121,7 @@ function BillingContent() {
                     : ' · unlimited projects'}
                 </p>
               </div>
-              {data.subscription.plan !== key && (
+              {data.subscription?.plan !== key && (
                 <button
                   type="button"
                   disabled={loading !== null}
