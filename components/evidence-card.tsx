@@ -10,6 +10,8 @@ type EvidenceCardProps = {
     file_path: string
     evidence_type: string
     summary: string
+    created_at?: string
+    uploaded_by_label?: string
   }
   canEdit: boolean
   canDelete: boolean
@@ -70,6 +72,13 @@ export function EvidenceCard({
       >
         {doc.file_name}
       </button>
+
+      {doc.created_at && (
+        <p className="text-xs text-gray-500 mt-1">
+          Uploaded {new Date(doc.created_at).toLocaleString()}
+          {doc.uploaded_by_label ? ` · ${doc.uploaded_by_label}` : ''}
+        </p>
+      )}
 
       {editing ? (
         <div className="mt-2 space-y-2">

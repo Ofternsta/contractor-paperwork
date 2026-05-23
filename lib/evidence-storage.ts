@@ -1,4 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { enrichEvidenceRecords } from '@/lib/evidence-uploader'
+import type { AppRole } from '@/lib/roles'
 
 export type EvidenceRecord = {
   id: string
@@ -10,6 +12,10 @@ export type EvidenceRecord = {
   summary: string
   extracted_text?: string
   created_at: string
+  uploaded_by_id?: string
+  uploaded_by_name?: string | null
+  uploaded_by_role?: AppRole | 'unknown'
+  uploaded_by_label?: string
 }
 
 const BUCKET = 'project-files'
@@ -42,7 +48,7 @@ export async function listEvidence(
       if (!item.id) continue
 
       const filePath = `${prefix}/${item.name}`
-      const meta = await readMeta(supabase, filePath)
+      const meta = await readEvidenceMeta(supabase, filePath)
 
       if (meta) {
         if (meta.claim_id === claimId) records.push(meta)
@@ -64,13 +70,15 @@ export async function listEvidence(
     }
   }
 
-  return records.sort(
+  const sorted = records.sort(
     (a, b) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )
+
+  return enrichEvidenceRecords(supabase, sorted)
 }
 
-async function readMeta(
+export async function readEvidenceMeta(
   supabase: SupabaseClient,
   filePath: string
 ): Promise<EvidenceRecord | null> {

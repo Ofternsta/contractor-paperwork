@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server'
 import { analyzeEvidence } from '@/lib/analyze-evidence'
 import { extractTextFromFile } from '@/lib/extract-text'
+import { loadEvidenceUploader } from '@/lib/evidence-uploader'
 import {
   newEvidenceId,
+  readEvidenceMeta,
   saveEvidence,
   uploadEvidenceFile,
 } from '@/lib/evidence-storage'
@@ -86,8 +88,26 @@ export async function POST(req: Request) {
     const extractedText = await extractTextFromFile(file)
     const { evidenceType, summary } = await analyzeEvidence(file, extractedText)
 
+    const previous = existingPath
+      ? await readEvidenceMeta(supabase, existingPath)
+      : null
+
+    const uploader =
+      previous?.uploaded_by_id && previous.uploaded_by_label
+        ? {
+            uploaded_by_id: previous.uploaded_by_id,
+            uploaded_by_name: previous.uploaded_by_name ?? null,
+            uploaded_by_role: previous.uploaded_by_role ?? ('unknown' as const),
+            uploaded_by_label: previous.uploaded_by_label,
+          }
+        : previous?.uploaded_by_id
+          ? await loadEvidenceUploader(supabase, previous.uploaded_by_id)
+          : await loadEvidenceUploader(supabase, user.id)
+
+    const uploadedAt = previous?.created_at ?? new Date().toISOString()
+
     const evidence = await saveEvidence(supabase, {
-      id: newEvidenceId(),
+      id: previous?.id ?? newEvidenceId(),
       claim_id: claimId,
       file_name: file.name,
       file_path: filePath,
@@ -95,7 +115,8 @@ export async function POST(req: Request) {
       evidence_type: evidenceType,
       summary,
       extracted_text: extractedText || undefined,
-      created_at: new Date().toISOString(),
+      created_at: uploadedAt,
+      ...uploader,
     })
 
     return NextResponse.json({ evidence })

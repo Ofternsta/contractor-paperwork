@@ -33,6 +33,7 @@ type Evidence = {
   summary: string
   extracted_text?: string
   created_at?: string
+  uploaded_by_label?: string
 }
 
 export default function ProjectPageClient() {
@@ -253,6 +254,7 @@ export default function ProjectPageClient() {
       doc.summary,
       doc.evidence_type,
       doc.extracted_text,
+      doc.uploaded_by_label,
     ]
       .filter(Boolean)
       .join(' ')

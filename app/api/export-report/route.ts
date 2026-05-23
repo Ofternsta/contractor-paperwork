@@ -19,9 +19,13 @@ function buildHtmlReport(
   evidence: Awaited<ReturnType<typeof listEvidence>>
 ) {
   const evidenceRows = evidence
-    .map(
-      (e) => `<tr><td>${escapeHtml(e.evidence_type)}</td><td>${escapeHtml(e.file_name)}</td><td>${escapeHtml(e.summary)}</td></tr>`
-    )
+    .map((e) => {
+      const when = e.created_at
+        ? new Date(e.created_at).toLocaleString()
+        : '—'
+      const who = e.uploaded_by_label || '—'
+      return `<tr><td>${escapeHtml(e.evidence_type)}</td><td>${escapeHtml(e.file_name)}</td><td>${escapeHtml(when)}</td><td>${escapeHtml(who)}</td><td>${escapeHtml(e.summary)}</td></tr>`
+    })
     .join('')
 
   return `<!DOCTYPE html>
@@ -39,7 +43,7 @@ th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#f5f5f5}
 <h2>AI Summary</h2>
 <p>${escapeHtml(summary)}</p>
 <h2>Evidence (${evidence.length})</h2>
-<table><thead><tr><th>Type</th><th>File</th><th>Summary</th></tr></thead>
+<table><thead><tr><th>Type</th><th>File</th><th>Uploaded</th><th>By</th><th>Summary</th></tr></thead>
 <tbody>${evidenceRows}</tbody></table>
 <p><em>Generated ${new Date().toLocaleString()} — LedgerStack. Use Print → Save as PDF.</em></p>
 </body></html>`
@@ -87,7 +91,12 @@ async function buildPdfReport(
     addLine(`Evidence (${evidence.length} files)`, true)
 
     for (const e of evidence) {
+      const when = e.created_at
+        ? new Date(e.created_at).toLocaleString()
+        : 'unknown time'
+      const who = e.uploaded_by_label || 'unknown uploader'
       addLine(`• [${e.evidence_type}] ${e.file_name}`)
+      addLine(`  Uploaded ${when} · ${who}`)
       addLine(`  ${e.summary}`)
       if (e.extracted_text) {
         addLine(`  Extracted: ${e.extracted_text.slice(0, 400)}`)
