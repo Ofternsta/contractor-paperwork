@@ -5,6 +5,15 @@ const nextConfig: NextConfig = {
   images: {
     localPatterns: [{ pathname: "/logo.png" }, { pathname: "/logo-icon.png" }],
   },
+  async redirects() {
+    return [
+      {
+        source: "/favicon.ico",
+        destination: "/icon.png?v=2",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

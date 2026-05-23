@@ -3,8 +3,7 @@
  * Usage: node scripts/optimize-logo-icon.mjs [input]
  */
 import sharp from 'sharp'
-import toIco from 'to-ico'
-import { existsSync, renameSync, unlinkSync, writeFileSync } from 'fs'
+import { existsSync, renameSync, unlinkSync, copyFileSync } from 'fs'
 
 const input =
   process.argv[2] ||
@@ -49,18 +48,9 @@ async function squareIcon(size, outPath) {
 
 await squareIcon(512, 'app/icon.png')
 await squareIcon(180, 'app/apple-icon.png')
-
-const icoSizes = [16, 32, 48]
-const pngBuffers = await Promise.all(
-  icoSizes.map((size) =>
-    sharp(input)
-      .resize(size, size, { fit: 'inside', background: '#050505' })
-      .png()
-      .toBuffer()
-  )
-)
-writeFileSync('app/favicon.ico', await toIco(pngBuffers))
+copyFileSync('app/icon.png', 'public/icon.png')
+copyFileSync('app/apple-icon.png', 'public/apple-icon.png')
 
 console.log(
-  `logo-icon ${srcW}×${srcH} → public/logo-icon.png, app/icon.png, app/apple-icon.png, app/favicon.ico`
+  `logo-icon ${srcW}×${srcH} → public/logo-icon.png, app/icon.png, public/icon.png, app/apple-icon.png`
 )
