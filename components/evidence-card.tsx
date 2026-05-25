@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { EVIDENCE_TYPES } from '@/lib/evidence-types'
 
 type EvidenceCardProps = {
@@ -19,6 +19,7 @@ type EvidenceCardProps = {
   canEdit: boolean
   canDelete: boolean
   canRescan?: boolean
+  variant?: 'full' | 'detail'
   onOpen: (filePath: string) => void
   onDelete: (filePath: string) => void
   onUpdated: () => void
@@ -31,6 +32,7 @@ export function EvidenceCard({
   canEdit,
   canDelete,
   canRescan = false,
+  variant = 'full',
   onOpen,
   onDelete,
   onUpdated,
@@ -49,6 +51,13 @@ export function EvidenceCard({
     doc.file_type?.startsWith('image/') ||
     /\.(jpe?g|png|gif|webp)$/i.test(doc.file_name)
   const canRunAiRescan = isPdf || isImage
+  const isDetail = variant === 'detail'
+
+  useEffect(() => {
+    setSummary(doc.summary)
+    setEvidenceType(doc.evidence_type)
+    setEditing(false)
+  }, [doc.file_path, doc.summary, doc.evidence_type])
 
   async function save() {
     setSaving(true)
@@ -97,31 +106,57 @@ export function EvidenceCard({
   }
 
   return (
-    <article className="border border-border rounded-xl p-4 bg-surface-elevated shadow-sm">
-      <span className="inline-block text-xs font-semibold bg-gray-100 text-gray-800 px-2 py-1 rounded-full mb-2">
-        {doc.evidence_type}
-      </span>
-      <button
-        type="button"
-        className="block font-medium text-brand-bright text-left w-full py-1 min-h-[44px]"
-        onClick={() => onOpen(doc.file_path)}
-      >
-        {doc.file_name}
-      </button>
+    <article
+      className={
+        isDetail
+          ? 'pt-3 space-y-3'
+          : 'border border-border rounded-xl p-4 bg-surface-elevated shadow-sm'
+      }
+    >
+      {!isDetail && (
+        <>
+          <span className="inline-block text-xs font-semibold bg-surface border border-border text-foreground px-2 py-1 rounded-full mb-2">
+            {doc.evidence_type}
+          </span>
+          <button
+            type="button"
+            className="block font-medium text-brand-bright text-left w-full py-1 min-h-[44px]"
+            onClick={() => onOpen(doc.file_path)}
+          >
+            {doc.file_name}
+          </button>
+          {doc.created_at && (
+            <p className="text-xs text-muted-dim mt-1">
+              Uploaded {new Date(doc.created_at).toLocaleString()}
+              {doc.uploaded_by_label ? ` · ${doc.uploaded_by_label}` : ''}
+            </p>
+          )}
+        </>
+      )}
 
-      {doc.created_at && (
-        <p className="text-xs text-muted-dim mt-1">
-          Uploaded {new Date(doc.created_at).toLocaleString()}
-          {doc.uploaded_by_label ? ` · ${doc.uploaded_by_label}` : ''}
-        </p>
+      {isDetail && (
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onOpen(doc.file_path)}
+            className="text-sm font-medium text-brand-bright min-h-[40px]"
+          >
+            View file
+          </button>
+          {doc.uploaded_by_label && (
+            <span className="text-xs text-muted-dim">
+              Uploaded by {doc.uploaded_by_label}
+            </span>
+          )}
+        </div>
       )}
 
       {editing ? (
-        <div className="mt-2 space-y-2">
+        <div className="space-y-2">
           <select
             value={evidenceType}
             onChange={(e) => setEvidenceType(e.target.value)}
-            className="border border-border rounded-xl p-2 w-full text-sm"
+            className="border border-border rounded-xl p-2 w-full text-sm bg-surface"
           >
             {EVIDENCE_TYPES.map((t) => (
               <option key={t} value={t}>
@@ -132,7 +167,7 @@ export function EvidenceCard({
           <textarea
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
-            className="border border-border rounded-xl p-3 w-full min-h-[100px] text-sm"
+            className="border border-border rounded-xl p-3 w-full min-h-[100px] text-sm bg-surface"
           />
           {error && <p className="text-sm text-red-400">{error}</p>}
           <div className="flex gap-2">
@@ -151,46 +186,48 @@ export function EvidenceCard({
                 setSummary(doc.summary)
                 setEvidenceType(doc.evidence_type)
               }}
-              className="flex-1 border py-2 rounded-lg text-sm min-h-[44px]"
+              className="flex-1 border border-border py-2 rounded-lg text-sm min-h-[44px]"
             >
               Cancel
             </button>
           </div>
         </div>
       ) : (
-        <p className="text-sm text-muted mt-2 leading-relaxed">{doc.summary}</p>
+        <p className="text-sm text-muted leading-relaxed">{doc.summary}</p>
       )}
 
-      <div className="flex flex-wrap gap-3 mt-3">
-        {canRescan && canRunAiRescan && !editing && (
-          <button
-            type="button"
-            className="text-sm font-medium text-brand-bright min-h-[44px] disabled:opacity-50"
-            disabled={rescanning}
-            onClick={rescanText}
-          >
-            {rescanning ? 'Re-scanning…' : 'Re-scan text'}
-          </button>
-        )}
-        {canEdit && !editing && (
-          <button
-            type="button"
-            className="text-sm font-medium text-foreground min-h-[44px]"
-            onClick={() => setEditing(true)}
-          >
-            Edit summary
-          </button>
-        )}
-        {canDelete && (
-          <button
-            type="button"
-            className="text-red-600 font-medium text-sm min-h-[44px]"
-            onClick={() => onDelete(doc.file_path)}
-          >
-            Delete
-          </button>
-        )}
-      </div>
+      {!editing && (
+        <div className="flex flex-wrap gap-3">
+          {canRescan && canRunAiRescan && (
+            <button
+              type="button"
+              className="text-sm font-medium text-brand-bright min-h-[44px] disabled:opacity-50"
+              disabled={rescanning}
+              onClick={rescanText}
+            >
+              {rescanning ? 'Re-scanning…' : 'Re-scan text'}
+            </button>
+          )}
+          {canEdit && (
+            <button
+              type="button"
+              className="text-sm font-medium text-foreground min-h-[44px]"
+              onClick={() => setEditing(true)}
+            >
+              Edit summary
+            </button>
+          )}
+          {canDelete && (
+            <button
+              type="button"
+              className="text-red-500 font-medium text-sm min-h-[44px]"
+              onClick={() => onDelete(doc.file_path)}
+            >
+              Delete
+            </button>
+          )}
+        </div>
+      )}
     </article>
   )
 }

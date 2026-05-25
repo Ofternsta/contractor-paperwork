@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { AppHeader } from '@/components/app-header'
-import { EvidenceCard } from '@/components/evidence-card'
+import { EvidenceFolders } from '@/components/evidence-folders'
+import { ProjectStickyHeader } from '@/components/project-sticky-header'
 import { ClaimAiPanel } from '@/components/claim-ai-panel'
 import { ClaimStatusWorkflow } from '@/components/claim-status-workflow'
 import type { ClaimStatus } from '@/lib/claim-status'
@@ -14,7 +14,6 @@ import { ProjectSchedulePanel } from '@/components/project-schedule-panel'
 import { PlanUpgradeBanner } from '@/components/plan-upgrade-banner'
 import { ProjectClientPanel } from '@/components/project-client-panel'
 import { isUnlimited } from '@/lib/plan-entitlements'
-import { EVIDENCE_TYPES } from '@/lib/evidence-types'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
 import { supabase } from '@/lib/supabase'
@@ -53,7 +52,6 @@ export default function ProjectPageClient() {
   const [uploadMessage, setUploadMessage] = useState<string | null>(null)
   const [configError, setConfigError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
-  const [filterType, setFilterType] = useState('All')
   const [userId, setUserId] = useState<string | null>(null)
   const [timelineRefreshKey, setTimelineRefreshKey] = useState(0)
 
@@ -265,17 +263,14 @@ export default function ProjectPageClient() {
       .filter(Boolean)
       .join(' ')
       .toLowerCase()
-    const matchesSearch = !q || haystack.includes(q)
-    const matchesType =
-      filterType === 'All' || doc.evidence_type === filterType
-    return matchesSearch && matchesType
+    return !q || haystack.includes(q)
   })
 
   return (
     <div className="min-h-dvh flex flex-col">
-      <AppHeader
-        title={selectedClaim?.client_name || 'Project'}
-        subtitle={selectedClaim?.property_address}
+      <ProjectStickyHeader
+        title={activeClaim.client_name}
+        location={activeClaim.property_address}
         backHref="/projects"
         backLabel="Projects"
       />
@@ -418,47 +413,24 @@ export default function ProjectPageClient() {
               />
             )}
 
-            <div className="flex flex-col sm:flex-row gap-3">
-              <input
-                className="border border-gray-300 rounded-xl p-3 flex-1 w-full"
-                placeholder="Search files, summaries, OCR text…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <select
-                className="input-field w-full sm:w-auto sm:min-w-[180px]"
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-              >
-                <option>All</option>
-                {EVIDENCE_TYPES.map((type) => (
-                  <option key={type}>{type}</option>
-                ))}
-              </select>
-            </div>
+            <input
+              className="input-field w-full"
+              placeholder="Search files, summaries, OCR text…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
 
-            <div className="space-y-3">
-              {filtered.length === 0 && (
-                <p className="text-gray-500 text-center py-8">
-                  No evidence uploaded yet.
-                </p>
-              )}
-
-              {filtered.map((doc) => (
-                <EvidenceCard
-                  key={doc.id}
-                  doc={doc}
-                  projectId={id}
-                  claimId={activeClaim.id}
-                  canEdit={access.canEditEvidenceSummary}
-                  canDelete={access.canDeleteEvidence}
-                  canRescan={access.canUploadEvidence}
-                  onOpen={openFile}
-                  onDelete={deleteFile}
-                  onUpdated={() => fetchEvidence(activeClaim.id)}
-                />
-              ))}
-            </div>
+            <EvidenceFolders
+              documents={filtered}
+              projectId={id}
+              claimId={activeClaim.id}
+              canEdit={access.canEditEvidenceSummary}
+              canDelete={access.canDeleteEvidence}
+              canRescan={access.canUploadEvidence}
+              onOpen={openFile}
+              onDelete={deleteFile}
+              onUpdated={() => fetchEvidence(activeClaim.id)}
+            />
           </div>
         </div>
       </main>
