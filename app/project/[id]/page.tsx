@@ -229,7 +229,12 @@ export default function ProjectPageClient() {
   if (!claims.length) {
     return (
       <div className="min-h-dvh">
-        <AppHeader title="No access" backHref="/projects" backLabel="Projects" />
+        <ProjectStickyHeader
+          title="No access"
+          location="Return to your project list."
+          backHref="/projects"
+          backLabel="Projects"
+        />
         <div className="safe-x px-4 py-6 max-w-5xl mx-auto">
           <p className="text-gray-600">
             You do not have access to this project, or it has no claims yet.
@@ -243,7 +248,12 @@ export default function ProjectPageClient() {
   if (!activeClaim) {
     return (
       <div className="min-h-dvh">
-        <AppHeader title="No access" backHref="/projects" backLabel="Projects" />
+        <ProjectStickyHeader
+          title="No access"
+          location="Return to your project list."
+          backHref="/projects"
+          backLabel="Projects"
+        />
         <div className="safe-x px-4 py-6 max-w-5xl mx-auto">
           <p className="text-gray-600">No claim selected for this project.</p>
         </div>
