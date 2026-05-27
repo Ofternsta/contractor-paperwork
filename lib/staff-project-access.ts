@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isWorkerAssignedToProject } from '@/lib/project-worker-assignments'
 import type { AppRole } from '@/lib/roles'
 
 /** Admin or approved worker on the project's organization (not clients). */
@@ -42,7 +43,9 @@ export async function canAccessStaffProjectFeatures(
     .eq('status', 'approved')
     .maybeSingle()
 
-  return Boolean(membership)
+  if (!membership) return false
+
+  return isWorkerAssignedToProject(supabase, projectId, userId)
 }
 
 export async function getProjectOrgId(

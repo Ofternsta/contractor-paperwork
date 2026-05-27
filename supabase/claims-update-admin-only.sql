@@ -2,6 +2,7 @@
 -- Run in Supabase SQL Editor after platform-security.sql.
 
 DROP POLICY IF EXISTS "admin worker update claims" ON public.claims;
+DROP POLICY IF EXISTS "admin update claims" ON public.claims;
 CREATE POLICY "admin update claims"
   ON public.claims FOR UPDATE TO authenticated
   USING (

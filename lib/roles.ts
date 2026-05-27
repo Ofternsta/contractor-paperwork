@@ -101,7 +101,7 @@ export function buildAccess(input: {
       Boolean(ent?.exportWatermark) ||
       Boolean(ent?.claimPacketExport))
 
-  let canCreateProject = isAdmin || workerApproved
+  let canCreateProject = isAdmin
   if (hasPlan && ent && ent.maxActiveProjects >= 0) {
     const count = input.activeProjectCount ?? 0
     if (count >= ent.maxActiveProjects) {

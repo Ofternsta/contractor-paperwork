@@ -53,23 +53,10 @@ export async function canAccessProjectMessages(
   }
 
   if (role === 'worker') {
-    const { data: membership } = await supabase
-      .from('organization_members')
-      .select('status')
-      .eq('user_id', userId)
-      .eq('status', 'approved')
-      .limit(1)
-      .maybeSingle()
-
-    if (!membership) return false
-
-    const { data: project, error } = await supabase
-      .from('projects')
-      .select('id')
-      .eq('id', projectId)
-      .maybeSingle()
-
-    return !error && Boolean(project)
+    const { canAccessStaffProjectFeatures } = await import(
+      '@/lib/staff-project-access'
+    )
+    return canAccessStaffProjectFeatures(supabase, projectId, userId)
   }
 
   return false

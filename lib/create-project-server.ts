@@ -19,16 +19,7 @@ async function userMayCreateInOrg(userId: string, organizationId: string) {
     .eq('id', organizationId)
     .maybeSingle()
 
-  if (org?.admin_user_id === userId) return true
-
-  const { data: membership } = await service
-    .from('organization_members')
-    .select('status')
-    .eq('organization_id', organizationId)
-    .eq('user_id', userId)
-    .maybeSingle()
-
-  return membership?.status === 'approved'
+  return org?.admin_user_id === userId
 }
 
 export async function createProjectForUser(
@@ -47,7 +38,7 @@ export async function createProjectForUser(
   if (!(await userMayCreateInOrg(userId, organizationId))) {
     return {
       error:
-        'You are not allowed to create projects for this organization. Workers must be approved by an admin.',
+        'Only organization admins can create projects. Ask your admin to add a new project.',
     }
   }
 

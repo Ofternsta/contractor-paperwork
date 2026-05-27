@@ -19,24 +19,14 @@ ALTER TABLE public.projects
 -- Replace insert policy with inline checks (no function permission issues)
 DROP POLICY IF EXISTS "users insert own projects" ON public.projects;
 DROP POLICY IF EXISTS "admin worker insert projects" ON public.projects;
+DROP POLICY IF EXISTS "admin insert projects" ON public.projects;
 
-CREATE POLICY "admin worker insert projects"
+CREATE POLICY "admin insert projects"
   ON public.projects FOR INSERT TO authenticated
   WITH CHECK (
     user_id = auth.uid()
     AND organization_id IS NOT NULL
-    AND (
-      EXISTS (
-        SELECT 1 FROM public.organizations o
-        WHERE o.id = organization_id AND o.admin_user_id = auth.uid()
-      )
-      OR EXISTS (
-        SELECT 1 FROM public.organization_members m
-        WHERE m.organization_id = organization_id
-          AND m.user_id = auth.uid()
-          AND m.status = 'approved'
-      )
-    )
+    AND public.is_org_admin(organization_id)
   );
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.projects TO authenticated;

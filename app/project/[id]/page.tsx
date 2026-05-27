@@ -18,6 +18,7 @@ import { MessagePanel } from '@/components/message-panel'
 import { ProjectSchedulePanel } from '@/components/project-schedule-panel'
 import { PlanUpgradeBanner } from '@/components/plan-upgrade-banner'
 import { ProjectClientPanel } from '@/components/project-client-panel'
+import { ProjectWorkerPanel } from '@/components/project-worker-panel'
 import { isUnlimited } from '@/lib/plan-entitlements'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
@@ -329,6 +330,10 @@ export default function ProjectPageClient() {
               </>
             )}
           </p>
+        )}
+
+        {access.role === 'admin' && (
+          <ProjectWorkerPanel projectId={id} />
         )}
 
         {access.canManageProjectClients && (

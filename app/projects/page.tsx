@@ -249,8 +249,16 @@ export default function ProjectsPage() {
           </p>
         )}
 
-        {!access.canCreateProject && access.role !== 'client' && (
-          <PlanUpgradeBanner message="You have reached your project limit on this plan. Upgrade in Billing to add more projects." />
+        {!access.canCreateProject &&
+          access.role === 'admin' && (
+            <PlanUpgradeBanner message="You have reached your project limit on this plan. Upgrade in Billing to add more projects." />
+          )}
+
+        {access.role === 'worker' && (
+          <p className="text-sm text-muted bg-surface-elevated border border-border rounded-xl p-3">
+            Workers cannot create projects. Your admin creates jobs and assigns you
+            under each project&apos;s &quot;Assign workers&quot; section.
+          </p>
         )}
 
         {access.canManageTeam && <AdminTeamPanel />}
@@ -311,7 +319,9 @@ export default function ProjectsPage() {
             <p className="text-muted-dim text-center py-6">
               {access.role === 'client'
                 ? 'No projects shared with you yet. Ask your contractor admin to grant access using your signup email.'
-                : 'No projects yet. Create one above.'}
+                : access.role === 'worker'
+                  ? 'No projects assigned to you yet. Your organization admin must assign you to a project before you can open it.'
+                  : 'No projects yet. Create one above.'}
             </p>
           )}
 

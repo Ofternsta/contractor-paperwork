@@ -92,6 +92,7 @@ CREATE POLICY "staff update project files"
   );
 
 DROP POLICY IF EXISTS "admin delete project files" ON storage.objects;
+DROP POLICY IF EXISTS "staff delete project files" ON storage.objects;
 CREATE POLICY "staff delete project files"
   ON storage.objects FOR DELETE TO authenticated
   USING (
@@ -130,6 +131,7 @@ CREATE POLICY "staff update schedule"
   );
 
 DROP POLICY IF EXISTS "admin delete schedule" ON public.schedule_events;
+DROP POLICY IF EXISTS "staff delete schedule" ON public.schedule_events;
 CREATE POLICY "staff delete schedule"
   ON public.schedule_events FOR DELETE TO authenticated
   USING (
