@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { AdminTeamPanel } from '@/components/admin-team-panel'
 import { OrgTeamMessages } from '@/components/org-team-messages'
 import { AppHeader } from '@/components/app-header'
 import { AppFooter } from '@/components/app-footer'
@@ -261,7 +260,6 @@ export default function ProjectsPage() {
           </p>
         )}
 
-        {access.canManageTeam && <AdminTeamPanel />}
         {access.canUseTeamMessages && (
           <OrgTeamMessages access={access} userId={userId} />
         )}

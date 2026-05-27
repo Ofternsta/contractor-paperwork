@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { assertCanAddWorker } from '@/lib/plan-enforcement'
 import { transferOrgAdmin } from '@/lib/transfer-org-admin'
 import { requireAuth } from '@/lib/require-auth'
+import { normalizeJobTitle } from '@/lib/worker-job-titles'
 
 /** GET pending workers for admin's organization */
 export async function GET() {
@@ -50,10 +51,16 @@ export async function GET() {
     full_name: names[p.user_id] ?? null,
   }))
 
+  const { data: adminProfile } = await supabase
+    .from('profiles')
+    .select('id, full_name')
+    .eq('id', user.id)
+    .maybeSingle()
+
   const { data: approved } = await supabase
     .from('organization_members')
     .select(
-      'id, user_id, status, created_at, can_upload, can_delete, can_add_events, can_view_files'
+      'id, user_id, status, created_at, job_title, can_upload, can_delete, can_add_events, can_view_files'
     )
     .eq('organization_id', org.id)
     .eq('status', 'approved')
@@ -80,6 +87,10 @@ export async function GET() {
 
   return NextResponse.json({
     organization: org,
+    admin: {
+      user_id: user.id,
+      full_name: adminProfile?.full_name ?? null,
+    },
     pending: enriched,
     approved: enrichedApproved,
   })
@@ -156,7 +167,7 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true })
 }
 
-/** PATCH update worker permissions { member_id, permissions: { can_upload, ... } } */
+/** PATCH update worker permissions and/or job title */
 export async function PATCH(req: Request) {
   const { supabase, user } = await requireAuth()
   if (!user) {
@@ -166,10 +177,11 @@ export async function PATCH(req: Request) {
   const body = await req.json().catch(() => ({}))
   const memberId = String(body.member_id || '').trim()
   const permissions = body.permissions as Record<string, boolean> | undefined
+  const hasTitle = body.job_title !== undefined
 
-  if (!memberId || !permissions) {
+  if (!memberId || (!permissions && !hasTitle)) {
     return NextResponse.json(
-      { error: 'member_id and permissions are required' },
+      { error: 'member_id and permissions or job_title are required' },
       { status: 400 }
     )
   }
@@ -195,14 +207,20 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
+  const update: Record<string, unknown> = {}
+  if (permissions) {
+    update.can_upload = Boolean(permissions.can_upload)
+    update.can_delete = Boolean(permissions.can_delete)
+    update.can_add_events = Boolean(permissions.can_add_events)
+    update.can_view_files = Boolean(permissions.can_view_files)
+  }
+  if (hasTitle) {
+    update.job_title = normalizeJobTitle(String(body.job_title ?? ''))
+  }
+
   const { error } = await supabase
     .from('organization_members')
-    .update({
-      can_upload: Boolean(permissions.can_upload),
-      can_delete: Boolean(permissions.can_delete),
-      can_add_events: Boolean(permissions.can_add_events),
-      can_view_files: Boolean(permissions.can_view_files),
-    })
+    .update(update)
     .eq('id', memberId)
 
   if (error) {
