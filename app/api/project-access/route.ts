@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireOrgPlanFeature } from '@/lib/plan-guard'
 import { requireAuth } from '@/lib/require-auth'
+import { createServiceClient } from '@/lib/supabase/service'
 
 /** GET client access rows for a project (admin only) */
 export async function GET(req: Request) {
@@ -158,13 +159,38 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const { error } = await supabase
-    .from('project_client_access')
-    .delete()
-    .eq('id', accessId)
+  let error: { message: string } | null = null
+
+  try {
+    const service = createServiceClient()
+    const result = await service
+      .from('project_client_access')
+      .delete()
+      .eq('id', accessId)
+    error = result.error
+  } catch (err: unknown) {
+    const fallback = await supabase
+      .from('project_client_access')
+      .delete()
+      .eq('id', accessId)
+    error = fallback.error
+    if (!error && err instanceof Error) {
+      error = { message: err.message }
+    }
+  }
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    const msg = error.message
+    if (msg.toLowerCase().includes('permission denied')) {
+      return NextResponse.json(
+        {
+          error:
+            'Could not revoke access. Run supabase/client-access-delete-grant.sql in the Supabase SQL Editor, then try again.',
+        },
+        { status: 500 }
+      )
+    }
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })

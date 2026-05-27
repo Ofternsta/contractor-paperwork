@@ -51,9 +51,18 @@ export function ProjectClientPanel({ projectId }: { projectId: string }) {
   }
 
   async function revoke(accessId: string) {
-    await fetch(`/api/project-access?access_id=${accessId}`, {
+    setMessage(null)
+    const res = await fetch(`/api/project-access?access_id=${accessId}`, {
       method: 'DELETE',
     })
+    const payload = await res.json().catch(() => ({}))
+
+    if (!res.ok) {
+      setMessage(payload.error || 'Could not revoke access')
+      return
+    }
+
+    setMessage('Client access revoked.')
     await load()
   }
 
