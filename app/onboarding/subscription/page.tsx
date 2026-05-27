@@ -7,6 +7,7 @@ import { SubscriptionPlanPicker } from '@/components/subscription-plan-picker'
 import {
   clearAdminSignupDraft,
   loadAdminSignupDraft,
+  saveAdminSignupDraftPlan,
   type AdminSignupDraft,
 } from '@/lib/signup-draft'
 import { loadUserAccess } from '@/lib/load-access'
@@ -148,6 +149,8 @@ function SubscriptionOnboardingContent() {
             'Check your email and verify your address before payment.'
         )
       }
+
+      saveAdminSignupDraftPlan(selected)
     }
 
     const checkoutUrl = `/checkout?plan=${encodeURIComponent(selected)}${isRegister ? '&register=1' : ''}`

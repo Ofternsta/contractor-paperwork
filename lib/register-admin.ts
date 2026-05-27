@@ -176,6 +176,10 @@ async function upsertPendingSignupRow(input: RegisterAdminInput) {
   return { pendingId: pending.id as string, email }
 }
 
+function signupCheckoutVerifyNextPath(plan: BillingPlanId) {
+  return `/checkout?plan=${encodeURIComponent(plan)}&register=1`
+}
+
 /** Create account + pending signup if needed; require email verification before Stripe. */
 export async function prepareAdminCheckoutVerification(
   input: RegisterAdminInput
@@ -197,7 +201,9 @@ export async function prepareAdminCheckoutVerification(
     if ('error' in pending && pending.error) {
       return { error: pending.error }
     }
-    const sent = await sendSignupConfirmationEmail(email)
+    const sent = await sendSignupConfirmationEmail(email, {
+      nextPath: signupCheckoutVerifyNextPath(input.plan),
+    })
     if (!sent.ok) return { error: sent.error || 'Could not send verification email' }
     return {
       emailVerified: false,
@@ -228,7 +234,9 @@ export async function prepareAdminCheckoutVerification(
     return { error: createError?.message || 'Could not create account' }
   }
 
-  const sent = await sendSignupConfirmationEmail(email)
+  const sent = await sendSignupConfirmationEmail(email, {
+    nextPath: signupCheckoutVerifyNextPath(input.plan),
+  })
   if (!sent.ok) {
     return { error: sent.error || 'Could not send verification email' }
   }

@@ -54,7 +54,12 @@ export function VerifyEmailBeforeCheckout({
       <h2 className="font-bold text-amber-950">Verify your email first</h2>
       <p className="text-sm text-amber-900 leading-relaxed">
         For security, you must confirm <strong>{email}</strong> before card
-        checkout. We sent a link to that inbox (check spam).
+        checkout. We sent a link to that inbox (check spam). After you click
+        it, you will return here to enter payment details.
+      </p>
+      <p className="text-xs text-amber-800/90">
+        Your login is created now; your company workspace is set up after payment
+        completes.
       </p>
       {message && (
         <p className="text-sm text-amber-900 border border-amber-100 rounded-lg p-2 bg-white/60">

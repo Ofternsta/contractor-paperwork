@@ -1,8 +1,12 @@
+import type { BillingPlanId } from '@/lib/stripe-config'
+
 export type AdminSignupDraft = {
   email: string
   password: string
   fullName: string
   organizationName: string
+  /** Last plan selected on onboarding (survives email verification redirect). */
+  selectedPlan?: BillingPlanId
 }
 
 const STORAGE_KEY = 'ledgerstack_admin_signup_draft'
@@ -28,4 +32,10 @@ export function loadAdminSignupDraft(): AdminSignupDraft | null {
 export function clearAdminSignupDraft() {
   if (typeof window === 'undefined') return
   sessionStorage.removeItem(STORAGE_KEY)
+}
+
+export function saveAdminSignupDraftPlan(plan: BillingPlanId) {
+  const draft = loadAdminSignupDraft()
+  if (!draft) return
+  saveAdminSignupDraft({ ...draft, selectedPlan: plan })
 }

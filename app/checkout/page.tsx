@@ -22,8 +22,24 @@ function CheckoutContent() {
   const [emailVerified, setEmailVerified] = useState(false)
   const [checkoutEmail, setCheckoutEmail] = useState<string | null>(null)
 
-  const plan = planParam && planParam in BILLING_PLANS ? planParam : null
+  const signupDraft = isRegister ? loadAdminSignupDraft() : null
+  const draftPlan = signupDraft?.selectedPlan ?? null
+  const resolvedPlan =
+    planParam && planParam in BILLING_PLANS
+      ? planParam
+      : draftPlan && draftPlan in BILLING_PLANS
+        ? draftPlan
+        : null
+
+  const plan = resolvedPlan
   const planInfo = plan ? BILLING_PLANS[plan] : null
+
+  useEffect(() => {
+    if (!isRegister || !draftPlan || planParam) return
+    if (draftPlan in BILLING_PLANS) {
+      router.replace(`/checkout?plan=${encodeURIComponent(draftPlan)}&register=1`)
+    }
+  }, [isRegister, draftPlan, planParam, router])
 
   const startStripeCheckout = useCallback(async () => {
     if (!plan) return
