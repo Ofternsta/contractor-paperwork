@@ -1,13 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import {
-  DEFAULT_WORKER_PERMISSIONS,
-  WORKER_PERMISSION_LABELS,
-  type WorkerPermissionKey,
-  type WorkerPermissions,
-  parseWorkerPermissions,
-} from '@/lib/worker-permissions'
+import { useEffect, useMemo, useState } from 'react'
+import { compareByWorkerName, formatWorkerListLabel } from '@/lib/sort-team-members'
 import { WORKER_JOB_TITLE_SUGGESTIONS } from '@/lib/worker-job-titles'
 
 type MemberRow = {
@@ -16,10 +10,6 @@ type MemberRow = {
   created_at: string
   full_name: string | null
   job_title?: string | null
-  can_upload?: boolean
-  can_delete?: boolean
-  can_add_events?: boolean
-  can_view_files?: boolean
 }
 
 type OrgInfo = {
@@ -33,10 +23,6 @@ type AdminInfo = {
   full_name: string | null
 }
 
-const PERM_KEYS = Object.keys(
-  WORKER_PERMISSION_LABELS
-) as WorkerPermissionKey[]
-
 export function AdminTeamPanel() {
   const [org, setOrg] = useState<OrgInfo | null>(null)
   const [admin, setAdmin] = useState<AdminInfo | null>(null)
@@ -47,12 +33,15 @@ export function AdminTeamPanel() {
   const [regenerating, setRegenerating] = useState(false)
   const [inviteVisible, setInviteVisible] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [permDraft, setPermDraft] = useState<Record<string, WorkerPermissions>>(
-    {}
-  )
   const [titleDraft, setTitleDraft] = useState<Record<string, string>>({})
+  const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null)
   const [permMessage, setPermMessage] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+
+  const sortedWorkers = useMemo(
+    () => [...approved].sort(compareByWorkerName),
+    [approved]
+  )
 
   async function load() {
     setLoading(true)
@@ -65,13 +54,10 @@ export function AdminTeamPanel() {
       setPending(payload.pending || [])
       const approvedList = (payload.approved || []) as MemberRow[]
       setApproved(approvedList)
-      const drafts: Record<string, WorkerPermissions> = {}
       const titles: Record<string, string> = {}
       for (const m of approvedList) {
-        drafts[m.id] = parseWorkerPermissions(m)
         titles[m.id] = m.job_title?.trim() || ''
       }
-      setPermDraft(drafts)
       setTitleDraft(titles)
     } else {
       setLoadError(
@@ -104,9 +90,6 @@ export function AdminTeamPanel() {
   }
 
   async function saveMember(memberId: string) {
-    const permissions = permDraft[memberId]
-    if (!permissions) return
-
     setActingId(memberId)
     setPermMessage(null)
     const res = await fetch('/api/team', {
@@ -114,7 +97,6 @@ export function AdminTeamPanel() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         member_id: memberId,
-        permissions,
         job_title: titleDraft[memberId] ?? '',
       }),
     })
@@ -126,16 +108,6 @@ export function AdminTeamPanel() {
     }
     setActingId(null)
     await load()
-  }
-
-  function setPerm(memberId: string, key: WorkerPermissionKey, value: boolean) {
-    setPermDraft((prev) => ({
-      ...prev,
-      [memberId]: {
-        ...(prev[memberId] || DEFAULT_WORKER_PERMISSIONS),
-        [key]: value,
-      },
-    }))
   }
 
   async function regenerateCode() {
@@ -292,103 +264,86 @@ export function AdminTeamPanel() {
 
       <section className="border border-border rounded-xl p-4 bg-surface-elevated space-y-3">
         <h2 className="font-bold text-lg">Workers</h2>
-        {approved.length === 0 ? (
+        <p className="text-sm text-muted leading-relaxed">
+          Permissions are set per project after you assign someone to a job.
+        </p>
+        {sortedWorkers.length === 0 ? (
           <p className="text-sm text-muted-dim">
             No approved workers yet. Share your invite code and approve requests
             above.
           </p>
         ) : (
-          <ul className="space-y-3">
-            {approved.map((m) => {
-              const perms = permDraft[m.id] || DEFAULT_WORKER_PERMISSIONS
+          <ul className="space-y-2">
+            {sortedWorkers.map((m) => {
+              const expanded = expandedMemberId === m.id
               return (
                 <li
                   key={m.id}
-                  className="border border-border rounded-xl p-3 flex flex-col gap-3"
+                  className="border border-border rounded-xl overflow-hidden"
                 >
-                  <div>
-                    <p className="font-medium text-sm text-foreground">
-                      {m.full_name || 'Worker'}
-                    </p>
-                    <p className="text-xs text-muted-dim mt-0.5">
-                      Account role: Worker
-                    </p>
-                  </div>
-
-                  <label className="block space-y-1">
-                    <span className="text-xs font-semibold text-muted uppercase tracking-wide">
-                      Job title
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedMemberId(expanded ? null : m.id)
+                    }
+                    className="w-full flex items-center justify-between gap-2 p-3 text-left hover:bg-surface min-h-[48px]"
+                  >
+                    <span className="font-medium text-sm text-foreground">
+                      {formatWorkerListLabel(m.full_name, m.job_title)}
                     </span>
-                    <input
-                      type="text"
-                      list={`job-titles-${m.id}`}
-                      className="border border-border rounded-xl p-3 w-full text-sm"
-                      placeholder="e.g. Field Technician"
-                      value={titleDraft[m.id] ?? ''}
-                      onChange={(e) =>
-                        setTitleDraft((prev) => ({
-                          ...prev,
-                          [m.id]: e.target.value,
-                        }))
-                      }
-                    />
-                    <datalist id={`job-titles-${m.id}`}>
-                      {WORKER_JOB_TITLE_SUGGESTIONS.map((t) => (
-                        <option key={t} value={t} />
-                      ))}
-                    </datalist>
-                    <p className="text-xs text-muted-dim">
-                      Shown on the team roster. Pick a suggestion or type your own.
-                    </p>
-                  </label>
-
-                  <fieldset className="space-y-2">
-                    <legend className="text-xs font-semibold text-muted uppercase tracking-wide">
-                      Permissions
-                    </legend>
-                    {PERM_KEYS.map((key) => (
-                      <label
-                        key={key}
-                        className="flex items-start gap-2 text-sm cursor-pointer"
-                      >
+                    <span className="text-muted-dim text-xs shrink-0">
+                      {expanded ? '▲' : '▼'}
+                    </span>
+                  </button>
+                  {expanded && (
+                    <div className="border-t border-border p-3 space-y-3 bg-surface">
+                      <label className="block space-y-1">
+                        <span className="text-xs font-semibold text-muted uppercase tracking-wide">
+                          Job title
+                        </span>
                         <input
-                          type="checkbox"
-                          className="mt-1"
-                          checked={perms[key]}
+                          type="text"
+                          list={`job-titles-${m.id}`}
+                          className="border border-border rounded-xl p-3 w-full text-sm"
+                          placeholder="e.g. Field Technician"
+                          value={titleDraft[m.id] ?? ''}
                           onChange={(e) =>
-                            setPerm(m.id, key, e.target.checked)
+                            setTitleDraft((prev) => ({
+                              ...prev,
+                              [m.id]: e.target.value,
+                            }))
                           }
                         />
-                        <span>
-                          <span className="font-medium text-foreground">
-                            {WORKER_PERMISSION_LABELS[key].label}
-                          </span>
-                          <span className="block text-xs text-muted-dim">
-                            {WORKER_PERMISSION_LABELS[key].description}
-                          </span>
-                        </span>
+                        <datalist id={`job-titles-${m.id}`}>
+                          {WORKER_JOB_TITLE_SUGGESTIONS.map((t) => (
+                            <option key={t} value={t} />
+                          ))}
+                        </datalist>
+                        <p className="text-xs text-muted-dim">
+                          Shown on the team roster and when assigning projects.
+                        </p>
                       </label>
-                    ))}
-                  </fieldset>
 
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={actingId === m.id}
-                      onClick={() => saveMember(m.id)}
-                      className="text-sm btn-primary text-[#052e16] px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
-                    >
-                      {actingId === m.id ? 'Saving…' : 'Save'}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={actingId === m.id}
-                      onClick={() => act(m.id, 'promote_admin')}
-                      className="text-sm border border-border px-3 py-2 rounded-lg font-medium text-foreground min-h-[40px] disabled:opacity-50"
-                    >
-                      Make organization admin
-                    </button>
-                  </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          disabled={actingId === m.id}
+                          onClick={() => saveMember(m.id)}
+                          className="text-sm btn-primary text-[#052e16] px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
+                        >
+                          {actingId === m.id ? 'Saving…' : 'Save title'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={actingId === m.id}
+                          onClick={() => act(m.id, 'promote_admin')}
+                          className="text-sm border border-border px-3 py-2 rounded-lg font-medium text-foreground min-h-[40px] disabled:opacity-50"
+                        >
+                          Make organization admin
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </li>
               )
             })}

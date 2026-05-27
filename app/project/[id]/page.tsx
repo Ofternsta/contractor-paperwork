@@ -22,6 +22,7 @@ import { ProjectWorkerPanel } from '@/components/project-worker-panel'
 import { isUnlimited } from '@/lib/plan-entitlements'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
+import type { WorkerPermissions } from '@/lib/worker-permissions'
 import { supabase } from '@/lib/supabase'
 import { uploadEvidenceWithAi } from '@/lib/upload-evidence-server'
 import { validateUploadSize } from '@/lib/upload-limits'
@@ -62,10 +63,47 @@ export default function ProjectPageClient() {
   const [timelineRefreshKey, setTimelineRefreshKey] = useState(0)
   const [archivePrompt, setArchivePrompt] = useState(false)
 
+  function mergeWorkerProjectAccess(
+    base: UserAccess,
+    wp: WorkerPermissions
+  ): UserAccess {
+    return {
+      ...base,
+      canUploadEvidence: wp.can_upload,
+      canViewFiles: wp.can_view_files,
+      canDeleteEvidence: wp.can_delete,
+      canManageSchedule: base.canViewCalendar && wp.can_add_events,
+      canUpdateClaimInfo:
+        wp.can_upload || wp.can_add_events || wp.can_view_files,
+    }
+  }
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id ?? null))
-    loadUserAccess().then(({ access: a }) => setAccess(a))
-  }, [])
+
+    async function loadAccessForProject() {
+      const { access: base } = await loadUserAccess()
+      if (!base) {
+        setAccess(null)
+        return
+      }
+
+      if (base.role === 'worker') {
+        const res = await fetch(`/api/projects/${id}/my-access`)
+        const payload = await res.json().catch(() => ({}))
+        if (!res.ok || !payload.permissions) {
+          window.location.href = '/projects'
+          return
+        }
+        setAccess(mergeWorkerProjectAccess(base, payload.permissions))
+        return
+      }
+
+      setAccess(base)
+    }
+
+    void loadAccessForProject()
+  }, [id])
 
   async function fetchClaims() {
     setLoading(true)
@@ -332,10 +370,6 @@ export default function ProjectPageClient() {
           </p>
         )}
 
-        {access.role === 'admin' && (
-          <ProjectWorkerPanel projectId={id} />
-        )}
-
         {access.canManageProjectClients && (
           <ProjectClientPanel projectId={id} />
         )}
@@ -510,6 +544,10 @@ export default function ProjectPageClient() {
                 Your account cannot view project files. Contact your organization
                 admin if you need access.
               </p>
+            )}
+
+            {access.role === 'admin' && (
+              <ProjectWorkerPanel projectId={id} />
             )}
           </div>
         </div>
