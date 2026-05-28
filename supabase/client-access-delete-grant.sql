@@ -1,5 +1,5 @@
--- Optional: hard-delete rows. Revoke in the app uses status = 'rejected' (UPDATE only).
--- Run if you still want DELETE available for maintenance.
+-- Prefer the full script: supabase/project-client-access-grants.sql
+-- This file only adds DELETE if you ran an older partial grant.
 
-GRANT DELETE ON public.project_client_access TO authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.project_client_access TO service_role;
+GRANT DELETE ON TABLE public.project_client_access TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.project_client_access TO service_role;

@@ -100,11 +100,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: portalCheck.error }, { status: 403 })
   }
 
-  const granted = await grantClientProjectAccessServer({
-    projectId,
-    clientEmail,
-    approvedBy: user.id,
-  })
+  const granted = await grantClientProjectAccessServer(
+    {
+      projectId,
+      clientEmail,
+      approvedBy: user.id,
+    },
+    { adminSupabase: supabase }
+  )
 
   if (!granted.ok) {
     return NextResponse.json({ error: granted.error }, { status: 500 })

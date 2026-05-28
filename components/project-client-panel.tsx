@@ -42,6 +42,8 @@ export function ProjectClientPanel({ projectId }: { projectId: string }) {
 
     if (!res.ok) {
       setMessage(payload.error || 'Could not grant access')
+      setSaving(false)
+      return
     } else {
       setMessage(`Access granted to ${email.trim().toLowerCase()}`)
       setEmail('')

@@ -23,7 +23,9 @@ export async function GET() {
         return NextResponse.json({ projects: [] })
       }
 
-      await linkClientAccessByEmailServer(user.email, user.id)
+      await linkClientAccessByEmailServer(user.email, user.id, {
+        userSupabase: supabase,
+      })
       const projects = await listClientProjectsServer(user.id, user.email)
       return NextResponse.json({ projects })
     }
