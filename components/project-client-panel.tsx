@@ -98,7 +98,16 @@ export function ProjectClientPanel({ projectId }: { projectId: string }) {
       </form>
 
       {message && (
-        <p className="text-sm text-green-800">{message}</p>
+        <p
+          className={`text-sm rounded-lg px-3 py-2 ${
+            message.toLowerCase().includes('could not') ||
+            message.toLowerCase().includes('error')
+              ? 'text-red-800 bg-red-50 border border-red-100'
+              : 'text-green-800 bg-green-50 border border-green-100'
+          }`}
+        >
+          {message}
+        </p>
       )}
 
       {loading ? (
@@ -112,9 +121,9 @@ export function ProjectClientPanel({ projectId }: { projectId: string }) {
               key={r.id}
               className="flex items-center justify-between gap-2 border border-gray-100 rounded-lg p-3 text-sm"
             >
-              <span>
-                {r.client_email}
-                <span className="text-green-700 ml-2 text-xs font-medium">
+              <span className="min-w-0">
+                <span className="break-all">{r.client_email}</span>
+                <span className="text-green-700 ml-2 text-xs font-medium capitalize">
                   {r.status}
                 </span>
               </span>

@@ -40,6 +40,7 @@ export async function GET(req: Request) {
     .from('project_client_access')
     .select('id, client_email, user_id, status, created_at, approved_at')
     .eq('project_id', projectId)
+    .neq('status', 'rejected')
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -159,38 +160,44 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  let error: { message: string } | null = null
+  // Use status update (UPDATE is granted + RLS-friendly); hard DELETE often blocked.
+  const revokePayload = {
+    status: 'rejected' as const,
+    approved_at: null,
+    approved_by: null,
+  }
 
-  try {
-    const service = createServiceClient()
-    const result = await service
-      .from('project_client_access')
-      .delete()
-      .eq('id', accessId)
-    error = result.error
-  } catch (err: unknown) {
-    const fallback = await supabase
-      .from('project_client_access')
-      .delete()
-      .eq('id', accessId)
-    error = fallback.error
-    if (!error && err instanceof Error) {
-      error = { message: err.message }
+  let { data: revoked, error: revokeError } = await supabase
+    .from('project_client_access')
+    .update(revokePayload)
+    .eq('id', accessId)
+    .select('id')
+    .maybeSingle()
+
+  if (revokeError || !revoked) {
+    try {
+      const service = createServiceClient()
+      const fallback = await service
+        .from('project_client_access')
+        .update(revokePayload)
+        .eq('id', accessId)
+        .select('id')
+        .maybeSingle()
+      revoked = fallback.data
+      revokeError = fallback.error
+    } catch (err: unknown) {
+      if (!revokeError && err instanceof Error) {
+        return NextResponse.json({ error: err.message }, { status: 500 })
+      }
     }
   }
 
-  if (error) {
-    const msg = error.message
-    if (msg.toLowerCase().includes('permission denied')) {
-      return NextResponse.json(
-        {
-          error:
-            'Could not revoke access. Run supabase/client-access-delete-grant.sql in the Supabase SQL Editor, then try again.',
-        },
-        { status: 500 }
-      )
-    }
-    return NextResponse.json({ error: msg }, { status: 500 })
+  if (revokeError) {
+    return NextResponse.json({ error: revokeError.message }, { status: 500 })
+  }
+
+  if (!revoked) {
+    return NextResponse.json({ error: 'Could not revoke access' }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })

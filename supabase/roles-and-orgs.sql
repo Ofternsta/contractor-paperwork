@@ -87,6 +87,7 @@ CREATE TABLE IF NOT EXISTS public.project_client_access (
 ALTER TABLE public.project_client_access ENABLE ROW LEVEL SECURITY;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.project_client_access TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.project_client_access TO service_role;
 
 -- Projects belong to an organization
 ALTER TABLE public.projects
