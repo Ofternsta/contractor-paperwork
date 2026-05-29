@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '@/components/theme-provider'
+import { passwordResetRedirectUrl } from '@/lib/auth-redirect'
+import {
+  PASSWORD_REQUIREMENTS_TEXT,
+} from '@/lib/password-policy'
 import type { ThemePreference } from '@/lib/theme'
 import { supabase } from '@/lib/supabase'
 
@@ -23,9 +27,7 @@ export function AccountSettingsPanel() {
   const [savingName, setSavingName] = useState(false)
   const [nameMessage, setNameMessage] = useState<string | null>(null)
 
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [savingPassword, setSavingPassword] = useState(false)
+  const [sendingResetEmail, setSendingResetEmail] = useState(false)
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null)
 
   const [mfaFactors, setMfaFactors] = useState<MfaFactor[]>([])
@@ -108,27 +110,25 @@ export function AccountSettingsPanel() {
     else setNameMessage('Name updated.')
   }
 
-  async function changePassword(e: React.FormEvent) {
-    e.preventDefault()
+  async function sendPasswordResetEmail() {
     setPasswordMessage(null)
-    if (newPassword.length < 6) {
-      setPasswordMessage('Password must be at least 6 characters.')
+    const target = email.trim().toLowerCase()
+    if (!target) {
+      setPasswordMessage('No email on file for this account.')
       return
     }
-    if (newPassword !== confirmPassword) {
-      setPasswordMessage('Passwords do not match.')
-      return
-    }
-    setSavingPassword(true)
-    const { error } = await supabase.auth.updateUser({ password: newPassword })
-    setSavingPassword(false)
+    setSendingResetEmail(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(target, {
+      redirectTo: passwordResetRedirectUrl(),
+    })
+    setSendingResetEmail(false)
     if (error) {
       setPasswordMessage(error.message)
       return
     }
-    setNewPassword('')
-    setConfirmPassword('')
-    setPasswordMessage('Password updated.')
+    setPasswordMessage(
+      `We sent a password reset link to ${target}. Check your inbox and spam folder. The link expires after a short time.`
+    )
   }
 
   async function startMfaEnroll() {
@@ -310,60 +310,35 @@ export function AccountSettingsPanel() {
         <h2 className="font-bold text-lg text-[var(--header-title)]">
           Change password
         </h2>
-        <form onSubmit={changePassword} className="space-y-3">
-          <div>
-            <label
-              htmlFor="settings-new-password"
-              className="block text-sm font-medium text-muted mb-1"
-            >
-              New password
-            </label>
-            <input
-              id="settings-new-password"
-              type="password"
-              autoComplete="new-password"
-              minLength={6}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="input-field"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="settings-confirm-password"
-              className="block text-sm font-medium text-muted mb-1"
-            >
-              Confirm new password
-            </label>
-            <input
-              id="settings-confirm-password"
-              type="password"
-              autoComplete="new-password"
-              minLength={6}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="input-field"
-            />
-          </div>
-          {passwordMessage && (
-            <p
-              className={`text-sm ${
-                passwordMessage.includes('updated')
-                  ? 'text-green-700'
-                  : 'text-red-600'
-              }`}
-            >
-              {passwordMessage}
-            </p>
-          )}
-          <button
-            type="submit"
-            disabled={savingPassword || !newPassword}
-            className="btn-primary px-4 py-3 rounded-xl text-sm font-medium min-h-[48px] disabled:opacity-50"
+        <p className="text-sm text-muted leading-relaxed">
+          For security, we email you a link to set a new password. You cannot
+          change it directly on this page.
+        </p>
+        <p className="text-sm text-muted-dim">
+          Password requirements: {PASSWORD_REQUIREMENTS_TEXT}
+        </p>
+        <p className="text-sm text-muted">
+          Reset link will be sent to <strong className="text-foreground">{email}</strong>.
+        </p>
+        {passwordMessage && (
+          <p
+            className={`text-sm leading-relaxed ${
+              passwordMessage.includes('sent a password reset')
+                ? 'alert-success'
+                : 'alert-error'
+            }`}
           >
-            {savingPassword ? 'Updating…' : 'Update password'}
-          </button>
-        </form>
+            {passwordMessage}
+          </p>
+        )}
+        <button
+          type="button"
+          disabled={sendingResetEmail || !email}
+          onClick={sendPasswordResetEmail}
+          className="btn-primary px-4 py-3 rounded-xl text-sm font-medium min-h-[48px] disabled:opacity-50"
+        >
+          {sendingResetEmail ? 'Sending…' : 'Email password reset link'}
+        </button>
       </section>
 
       <section className="border border-border rounded-xl p-4 bg-surface-elevated space-y-4">

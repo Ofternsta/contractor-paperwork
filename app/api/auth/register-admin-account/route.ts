@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { parseBillingPlan } from '@/lib/admin-billing-setup'
+import { validatePassword } from '@/lib/password-policy'
 import {
   prepareAdminCheckoutVerification,
   type RegisterAdminInput,
@@ -27,6 +28,11 @@ export async function POST(req: Request) {
         { error: 'Email, password, and company name are required.' },
         { status: 400 }
       )
+    }
+
+    const passwordError = validatePassword(input.password)
+    if (passwordError) {
+      return NextResponse.json({ error: passwordError }, { status: 400 })
     }
 
     const result = await prepareAdminCheckoutVerification(input)

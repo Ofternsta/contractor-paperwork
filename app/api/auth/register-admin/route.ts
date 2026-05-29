@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { parseBillingPlan } from '@/lib/admin-billing-setup'
+import { validatePassword } from '@/lib/password-policy'
 import {
   startPaidAdminSignupCheckout,
   startTrialAdminSignupCheckout,
@@ -30,11 +31,9 @@ export async function POST(req: Request) {
       )
     }
 
-    if (input.password.length < 6) {
-      return NextResponse.json(
-        { error: 'Password must be at least 6 characters' },
-        { status: 400 }
-      )
+    const passwordError = validatePassword(input.password)
+    if (passwordError) {
+      return NextResponse.json({ error: passwordError }, { status: 400 })
     }
 
     if (!input.organizationName) {

@@ -12,6 +12,11 @@ import {
 } from '@/lib/invite-code'
 import type { AppRole } from '@/lib/roles'
 import { passwordResetRedirectUrl } from '@/lib/auth-redirect'
+import {
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_REQUIREMENTS_TEXT,
+  validatePasswordPair,
+} from '@/lib/password-policy'
 import { supabase } from '@/lib/supabase'
 import { BrandLogo } from '@/components/brand-logo'
 import { SupportLink } from '@/components/support-link'
@@ -237,14 +242,9 @@ export default function LoginPage() {
         return
       }
 
-      if (password !== confirmPassword) {
-        setMessage('Passwords do not match.')
-        setLoading(false)
-        return
-      }
-
-      if (password.length < 6) {
-        setMessage('Password must be at least 6 characters.')
+      const passwordError = validatePasswordPair(password, confirmPassword)
+      if (passwordError) {
+        setMessage(passwordError)
         setLoading(false)
         return
       }
@@ -657,12 +657,19 @@ export default function LoginPage() {
                   mode === 'signup' ? 'new-password' : 'current-password'
                 }
                 required
-                minLength={6}
+                minLength={PASSWORD_MIN_LENGTH}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="input-field"
-                placeholder="At least 6 characters"
+                placeholder={
+                  mode === 'signup' ? PASSWORD_REQUIREMENTS_TEXT : undefined
+                }
               />
+              {mode === 'signup' && (
+                <p className="text-xs text-muted-dim mt-1">
+                  {PASSWORD_REQUIREMENTS_TEXT}
+                </p>
+              )}
             </div>
           )}
 
@@ -679,7 +686,7 @@ export default function LoginPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                minLength={6}
+                minLength={PASSWORD_MIN_LENGTH}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="input-field"

@@ -4,6 +4,11 @@ import { FormEvent, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { BrandLogo } from '@/components/brand-logo'
+import {
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_REQUIREMENTS_TEXT,
+  validatePasswordPair,
+} from '@/lib/password-policy'
 import { supabase } from '@/lib/supabase'
 
 export default function ResetPasswordPage() {
@@ -31,13 +36,9 @@ export default function ResetPasswordPage() {
     e.preventDefault()
     setMessage(null)
 
-    if (password.length < 6) {
-      setMessage('Password must be at least 6 characters.')
-      return
-    }
-
-    if (password !== confirmPassword) {
-      setMessage('Passwords do not match.')
+    const validationError = validatePasswordPair(password, confirmPassword)
+    if (validationError) {
+      setMessage(validationError)
       return
     }
 
@@ -61,7 +62,8 @@ export default function ResetPasswordPage() {
           <BrandLogo href="/" size="lg" className="mx-auto" />
           <h1 className="text-2xl font-bold mt-4 text-white">Set a new password</h1>
           <p className="text-muted mt-2 text-sm">
-            Choose a password for your LedgerStack account
+            Choose a password for your LedgerStack account.{' '}
+            {PASSWORD_REQUIREMENTS_TEXT}
           </p>
         </div>
 
@@ -79,11 +81,11 @@ export default function ResetPasswordPage() {
                   type="password"
                   autoComplete="new-password"
                   required
-                  minLength={6}
+                  minLength={PASSWORD_MIN_LENGTH}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="input-field"
-                  placeholder="At least 6 characters"
+                  placeholder={PASSWORD_REQUIREMENTS_TEXT}
                 />
               </div>
 
@@ -99,7 +101,7 @@ export default function ResetPasswordPage() {
                   type="password"
                   autoComplete="new-password"
                   required
-                  minLength={6}
+                  minLength={PASSWORD_MIN_LENGTH}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="input-field"
