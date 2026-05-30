@@ -146,7 +146,7 @@ export function EvidenceCard({
           : 'border border-border rounded-xl p-4 bg-surface-elevated shadow-sm'
       }
     >
-      {canEdit && !editing && (
+      {canEdit && !editing && isDetail && (
         <div className="mb-3">
           <label className="block text-xs font-medium text-muted-dim mb-1">
             Category

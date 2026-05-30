@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { EvidenceCard } from '@/components/evidence-card'
-import { moveEvidenceCategory } from '@/lib/move-evidence-category-client'
 import {
   defaultFileCategories,
   normalizeFileCategoryLabel,
@@ -67,9 +66,6 @@ export function EvidenceFolders({
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [selectedPath, setSelectedPath] = useState<string | null>(null)
-  const [movingPath, setMovingPath] = useState<string | null>(null)
-  const [moveError, setMoveError] = useState<string | null>(null)
-
   const grouped = useMemo(() => {
     const map = Object.fromEntries(
       categories.map((c) => [c.key, [] as EvidenceDoc[]])
@@ -119,25 +115,6 @@ export function EvidenceFolders({
     void onDelete(filePath)
   }
 
-  async function handleMoveCategory(filePath: string, nextLabel: string) {
-    const doc = documents.find((d) => d.file_path === filePath)
-    if (!doc) return
-    const current = normalizeFileCategoryLabel(doc.evidence_type, categories)
-    if (nextLabel === current) return
-
-    setMovingPath(filePath)
-    setMoveError(null)
-    try {
-      await moveEvidenceCategory(filePath, nextLabel)
-      onUpdated()
-    } catch (err: unknown) {
-      setMoveError(
-        err instanceof Error ? err.message : 'Could not move document'
-      )
-    }
-    setMovingPath(null)
-  }
-
   const categoryLabels = categories.map((c) => c.label)
 
   if (totalCount === 0) {
@@ -163,11 +140,6 @@ export function EvidenceFolders({
   return (
     <section className="space-y-2" aria-label="Documents">
       <h2 className="font-bold text-lg text-foreground">Documents</h2>
-      {moveError && (
-        <p className="text-sm text-red-400" role="alert">
-          {moveError}
-        </p>
-      )}
       {categories.map((cat) => {
         const files = grouped[cat.key]
         const count = files.length
@@ -207,55 +179,24 @@ export function EvidenceFolders({
                 )}
                 {files.map((doc) => {
                   const isSelected = selectedPath === doc.file_path
-                  const docCategory = normalizeFileCategoryLabel(
-                    doc.evidence_type,
-                    categories
-                  )
                   return (
                     <li key={doc.id}>
-                      <div
-                        className={`flex w-full flex-col gap-2 px-4 py-3 min-h-[44px] transition-colors ${
+                      <button
+                        type="button"
+                        onClick={() => selectFile(doc.file_path, cat.key)}
+                        className={`flex w-full flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-3 px-4 py-3 min-h-[44px] text-left transition-colors ${
                           isSelected
                             ? 'bg-brand/10 border-l-2 border-l-brand'
                             : 'hover:bg-surface'
                         }`}
                       >
-                        <button
-                          type="button"
-                          onClick={() => selectFile(doc.file_path, cat.key)}
-                          className="flex w-full flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-3 text-left"
-                        >
-                          <span className="text-sm font-medium text-foreground truncate">
-                            {doc.file_name}
-                          </span>
-                          <span className="text-xs text-muted-dim shrink-0">
-                            {formatUploadedAt(doc.created_at)}
-                          </span>
-                        </button>
-                        {canEdit && (
-                          <label className="flex flex-col gap-1 sm:max-w-[220px]">
-                            <span className="text-xs text-muted-dim">Category</span>
-                            <select
-                              value={docCategory}
-                              disabled={movingPath === doc.file_path}
-                              onChange={(e) =>
-                                void handleMoveCategory(
-                                  doc.file_path,
-                                  e.target.value
-                                )
-                              }
-                              onClick={(e) => e.stopPropagation()}
-                              className="border border-border rounded-lg px-2 py-1.5 text-xs bg-surface w-full min-h-[40px] disabled:opacity-50"
-                            >
-                            {categoryLabels.map((label) => (
-                              <option key={label} value={label}>
-                                {label}
-                              </option>
-                            ))}
-                            </select>
-                          </label>
-                        )}
-                      </div>
+                        <span className="text-sm font-medium text-foreground truncate">
+                          {doc.file_name}
+                        </span>
+                        <span className="text-xs text-muted-dim shrink-0">
+                          {formatUploadedAt(doc.created_at)}
+                        </span>
+                      </button>
 
                       {isSelected && (
                         <div className="px-4 pb-4 border-t border-border bg-surface/50">
