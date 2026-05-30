@@ -294,6 +294,9 @@ export function MarketingHome() {
           <BrandLogo href="/" size="sm" showWordmark />
           <div className="flex flex-wrap items-center justify-center sm:justify-end gap-4 sm:gap-6">
             <SupportLink className="hover:text-brand-bright" />
+            <Link href="/how-to" className="hover:text-brand-bright">
+              How-to
+            </Link>
             <Link href="/privacy" className="hover:text-brand-bright">
               Privacy
             </Link>

@@ -19,7 +19,11 @@ const nextConfig: NextConfig = {
     ],
   },
   images: {
-    localPatterns: [{ pathname: "/logo.png" }, { pathname: "/logo-icon.png" }],
+    localPatterns: [
+      { pathname: "/logo.png" },
+      { pathname: "/logo-icon.png" },
+      { pathname: "/how-to/**" },
+    ],
   },
   async redirects() {
     return [

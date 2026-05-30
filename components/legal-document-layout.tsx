@@ -45,6 +45,10 @@ export function LegalDocumentLayout({
       </main>
 
       <footer className="border-t border-border py-6 text-center text-sm text-muted">
+        <Link href="/how-to" className="hover:text-brand-bright px-2">
+          How-to guide
+        </Link>
+        <span aria-hidden>·</span>
         <Link href="/privacy" className="hover:text-brand-bright px-2">
           Privacy Policy
         </Link>

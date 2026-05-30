@@ -12,6 +12,6 @@ export const config = {
      * be redirected to /login HTML (breaks JSON and returns 405 on POST).
      * Skip homepage and legal pages: static + CDN-cacheable.
      */
-    '/((?!$|privacy|terms|_next/static|_next/image|favicon.ico|icon|apple-icon|manifest.webmanifest|robots\\.txt|sitemap\\.xml|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    '/((?!$|privacy|terms|how-to|_next/static|_next/image|favicon.ico|icon|apple-icon|manifest.webmanifest|robots\\.txt|sitemap\\.xml|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 }
