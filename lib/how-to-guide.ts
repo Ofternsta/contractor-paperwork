@@ -15,6 +15,7 @@ export type HowToSection = {
   id: string
   title: string
   intro?: string
+  audience?: string
   /** e.g. "Professional plan or higher" */
   planNote?: string
   bullets?: string[]
@@ -26,6 +27,8 @@ export type HowToPart = {
   title: string
   /** admin | worker | client | all */
   audience?: string
+  /** Shown under the part heading when the whole part shares one plan gate */
+  planNote?: string
   sections: HowToSection[]
 }
 
