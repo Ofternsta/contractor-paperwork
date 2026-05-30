@@ -63,12 +63,156 @@
   --font-mono: var(--font-geist-mono);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
+}
+
+/* —— Marketing homepage motion —— */
+@keyframes marketing-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes marketing-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes marketing-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.marketing-hero-glow {
+  animation: marketing-glow-pulse 9s ease-in-out infinite;
+}
+
+.marketing-hero-item {
+  opacity: 0;
+  animation: marketing-fade-up 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.marketing-hero-item--1 {
+  animation-delay: 0.05s;
+}
+.marketing-hero-item--2 {
+  animation-delay: 0.12s;
+}
+.marketing-hero-item--3 {
+  animation-delay: 0.2s;
+}
+.marketing-hero-item--4 {
+  animation-delay: 0.28s;
+}
+.marketing-hero-item--5 {
+  animation-delay: 0.36s;
+}
+.marketing-hero-item--6 {
+  animation-delay: 0.44s;
+}
+
+.marketing-logo-float {
+  opacity: 0;
+  animation:
+    marketing-fade-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards,
+    marketing-float 7s ease-in-out 1.1s infinite;
+}
+
+.marketing-reveal {
+  opacity: 0;
+  transform: translateY(1.25rem);
+  transition:
+    opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.marketing-reveal--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.marketing-card-lift {
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.2s ease,
+    box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.marketing-card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+}
+
+:root[data-theme='dark'] .marketing-card-lift:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+.marketing-pricing-popular {
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.3s ease;
+}
+
+.marketing-pricing-popular:hover {
+  transform: scale(1.02);
+}
+
+.marketing-header {
+  transition:
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing-hero-glow,
+  .marketing-hero-item,
+  .marketing-logo-float {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .marketing-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .marketing-card-lift:hover,
+  .marketing-pricing-popular:hover {
+    transform: none;
+  }
 }
 
 .safe-top {
