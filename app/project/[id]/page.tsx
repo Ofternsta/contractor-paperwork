@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { EvidenceFolders } from '@/components/evidence-folders'
 import { ProjectPageHeader } from '@/components/project-page-header'
-import { ClaimAiPanel } from '@/components/claim-ai-panel'
+import { JobTimelinePanel } from '@/components/job-timeline-panel'
+import { ProjectAiExportSection } from '@/components/project-ai-export-section'
 import { ClaimStatusWorkflow } from '@/components/claim-status-workflow'
 import { ProjectArchivePanel } from '@/components/project-archive-panel'
 import {
@@ -525,13 +526,11 @@ export default function ProjectPageClient() {
             )}
 
             {!isClientViewer && (
-              <ClaimAiPanel
+              <JobTimelinePanel
                 claimId={activeClaim.id}
                 projectId={id}
                 timelineRefreshKey={timelineRefreshKey}
                 canGenerate={access.canUpdateClaimInfo}
-                canExportPdf={access.canExportPdf}
-                canExportHtml={access.canExportHtml}
                 aiSummariesLimit={access.aiSummariesLimit}
                 aiSummariesUsed={access.aiSummariesUsed}
               />
@@ -612,6 +611,18 @@ export default function ProjectPageClient() {
                 Your account cannot view project files. Contact your organization
                 admin if you need access.
               </p>
+            )}
+
+            {!isClientViewer && (
+              <ProjectAiExportSection
+                claimId={activeClaim.id}
+                projectId={id}
+                canGenerate={access.canUpdateClaimInfo}
+                canExportPdf={access.canExportPdf}
+                canExportHtml={access.canExportHtml}
+                aiSummariesLimit={access.aiSummariesLimit}
+                aiSummariesUsed={access.aiSummariesUsed}
+              />
             )}
           </div>
         </div>

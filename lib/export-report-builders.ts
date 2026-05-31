@@ -1,4 +1,5 @@
 import type { JobIntelligenceReport } from '@/lib/job-intelligence-types'
+import { expandBodyToDisplayLines } from '@/lib/report-body-format'
 
 export function escapeHtml(text: string) {
   return text
@@ -8,32 +9,31 @@ export function escapeHtml(text: string) {
     .replace(/"/g, '&quot;')
 }
 
-function bodyToHtmlParagraphs(body: string) {
-  const lines = body.split('\n').filter((l) => l.trim())
-  return lines
-    .map((line) => {
-      const trimmed = line.trim()
-      if (trimmed.startsWith('•') || trimmed.startsWith('- ')) {
-        return `<li>${escapeHtml(trimmed.replace(/^[•-]\s*/, ''))}</li>`
-      }
-      return `<p>${escapeHtml(trimmed)}</p>`
-    })
-    .join('')
+function entryHtml(line: string) {
+  const messageMatch = line.match(/^(.+?\d{4}.*?\d{1,2}:\d{2}\s*(?:AM|PM)?)\s*(?:—|-)\s*(.+?):\s*(.+)$/i)
+  if (messageMatch) {
+    const [, when, sender, body] = messageMatch
+    return `<div class="entry"><p class="entry-when">${escapeHtml(when.trim())}</p><p class="entry-body"><strong>${escapeHtml(sender.trim())}</strong>: ${escapeHtml(body.trim())}</p></div>`
+  }
+
+  const datedMatch = line.match(/^(.+?\d{4}.*?\d{1,2}:\d{2}\s*(?:AM|PM)?)\s*:\s*(.+)$/i)
+  if (datedMatch) {
+    const [, when, rest] = datedMatch
+    return `<div class="entry"><p class="entry-when">${escapeHtml(when.trim())}</p><p class="entry-body">${escapeHtml(rest.trim())}</p></div>`
+  }
+
+  return `<p class="entry-body">${escapeHtml(line)}</p>`
 }
 
 function sectionHtml(section: { title: string; body: string }, index: number) {
-  const lines = section.body.split('\n').filter((l) => l.trim())
-  const hasBullets = lines.some(
-    (l) => l.trim().startsWith('•') || l.trim().startsWith('- ')
-  )
-  const bodyContent = hasBullets
-    ? `<ul class="section-list">${bodyToHtmlParagraphs(section.body)}</ul>`
-    : bodyToHtmlParagraphs(section.body)
+  const entries = expandBodyToDisplayLines(section.body)
+    .map((line) => entryHtml(line))
+    .join('')
 
   return `
     <section class="report-section" id="section-${index}">
       <h2 class="section-title">${escapeHtml(section.title)}</h2>
-      <div class="section-body">${bodyContent}</div>
+      <div class="section-body">${entries}</div>
     </section>`
 }
 
@@ -96,7 +96,7 @@ export function buildHtmlJobReport(report: JobIntelligenceReport) {
       border: 1px solid #a7f3d0;
       border-radius: 12px;
       padding: 1.1rem 1.25rem;
-      margin-bottom: 1.75rem;
+      margin-top: 1.75rem;
     }
     .overview-card h2 {
       font-size: 12px;
@@ -105,27 +105,29 @@ export function buildHtmlJobReport(report: JobIntelligenceReport) {
       color: var(--accent);
       margin: 0 0 0.5rem;
     }
-    .overview-card p { margin: 0; }
+    .overview-card p { margin: 0; white-space: pre-line; }
     .report-section {
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.75rem;
       padding-bottom: 1.25rem;
       border-bottom: 1px solid var(--border);
       page-break-inside: avoid;
     }
-    .report-section:last-child { border-bottom: none; }
+    .report-section:last-of-type { border-bottom: none; }
     .section-title {
       font-size: 1.05rem;
-      margin: 0 0 0.65rem;
-      padding-left: 0.65rem;
+      margin: 0 0 0.85rem;
+      padding-left: 0.75rem;
       border-left: 4px solid var(--accent);
       color: var(--ink);
     }
-    .section-body p { margin: 0 0 0.5rem; }
-    .section-list {
-      margin: 0;
-      padding-left: 1.25rem;
+    .section-body { display: flex; flex-direction: column; gap: 1rem; }
+    .entry { margin: 0; }
+    .entry-when {
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0 0 0.25rem;
     }
-    .section-list li { margin-bottom: 0.35rem; }
+    .entry-body { margin: 0; }
     .footer {
       margin-top: 2rem;
       padding-top: 1rem;
@@ -168,12 +170,14 @@ export async function buildPdfJobReport(
     const { jsPDF } = await import('jspdf')
     const doc = new jsPDF({ unit: 'pt', format: 'letter' })
     const margin = 48
+    const contentX = margin + 10
     const pageWidth = doc.internal.pageSize.getWidth()
     const pageHeight = doc.internal.pageSize.getHeight()
-    const maxWidth = pageWidth - margin * 2
+    const maxWidth = pageWidth - margin - contentX
     let y = margin
     const lineHeight = 14
-    const sectionGap = 18
+    const entryGap = 10
+    const sectionGap = 20
 
     function newPageIfNeeded(extra = lineHeight) {
       if (y + extra > pageHeight - margin) {
@@ -182,30 +186,65 @@ export async function buildPdfJobReport(
       }
     }
 
-    function addLine(text: string, opts?: { bold?: boolean; size?: number; color?: [number, number, number] }) {
+    function wrapLines(text: string): string[] {
+      const wrapped = doc.splitTextToSize(text, maxWidth)
+      if (Array.isArray(wrapped)) return wrapped.map(String)
+      return [String(wrapped)]
+    }
+
+    function addWrappedText(
+      text: string,
+      opts?: { bold?: boolean; size?: number; color?: [number, number, number]; x?: number }
+    ) {
+      const x = opts?.x ?? contentX
       doc.setFont('helvetica', opts?.bold ? 'bold' : 'normal')
-      if (opts?.size) doc.setFontSize(opts.size)
-      else doc.setFontSize(10)
+      doc.setFontSize(opts?.size ?? 10)
       if (opts?.color) doc.setTextColor(...opts.color)
       else doc.setTextColor(15, 23, 42)
 
-      const lines = doc.splitTextToSize(text, maxWidth)
-      for (const line of lines) {
+      for (const line of wrapLines(text)) {
         newPageIfNeeded()
-        doc.text(line, margin, y)
+        doc.text(line, x, y)
         y += lineHeight
       }
+
       doc.setFontSize(10)
-      doc.setTextColor(0, 0, 0)
+      doc.setTextColor(15, 23, 42)
     }
 
     function addSectionTitle(title: string) {
-      newPageIfNeeded(sectionGap + 20)
+      newPageIfNeeded(sectionGap + 24)
       y += sectionGap
+      const barY = y - 11
       doc.setFillColor(5, 150, 105)
-      doc.rect(margin, y - 10, 4, 16, 'F')
-      addLine(title, { bold: true, size: 12, color: [15, 23, 42] })
-      y += 4
+      doc.rect(margin, barY, 4, 16, 'F')
+      addWrappedText(title, { bold: true, size: 12, x: contentX })
+      y += 6
+    }
+
+    function addEntryLine(line: string) {
+      const messageMatch = line.match(
+        /^(.+?\d{4}.*?\d{1,2}:\d{2}\s*(?:AM|PM)?)\s*(?:—|-)\s*(.+?):\s*(.+)$/i
+      )
+      if (messageMatch) {
+        const [, when, sender, body] = messageMatch
+        addWrappedText(when.trim(), { size: 9, color: [71, 85, 105] })
+        addWrappedText(`${sender.trim()}: ${body.trim()}`)
+        y += entryGap
+        return
+      }
+
+      const datedMatch = line.match(/^(.+?\d{4}.*?\d{1,2}:\d{2}\s*(?:AM|PM)?)\s*:\s*(.+)$/i)
+      if (datedMatch) {
+        const [, when, rest] = datedMatch
+        addWrappedText(when.trim(), { size: 9, color: [71, 85, 105] })
+        addWrappedText(rest.trim())
+        y += entryGap
+        return
+      }
+
+      addWrappedText(line)
+      y += entryGap
     }
 
     doc.setFillColor(236, 253, 245)
@@ -221,28 +260,38 @@ export async function buildPdfJobReport(
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(71, 85, 105)
     const meta = `${report.projectName} · ${new Date(report.generatedAt).toLocaleString()}`
-    doc.text(doc.splitTextToSize(meta, maxWidth)[0] || meta, margin, 62)
-    y = 88
-    doc.setTextColor(0, 0, 0)
+    const metaLines = wrapLines(meta)
+    doc.text(metaLines[0] || meta, margin, 62)
+    y = 92
+    doc.setTextColor(15, 23, 42)
 
     for (const section of report.sections) {
       addSectionTitle(section.title)
-      const paragraphs = section.body.split('\n')
-      for (const para of paragraphs) {
-        const t = para.trim()
-        if (!t) continue
-        addLine(t)
+      const entries = expandBodyToDisplayLines(section.body)
+      if (!entries.length) {
+        addWrappedText('No entries.')
+        y += entryGap
+        continue
+      }
+      for (const entry of entries) {
+        addEntryLine(entry)
       }
     }
 
     addSectionTitle('AI summary')
-    addLine(report.overview)
+    for (const line of wrapLines(report.overview)) {
+      newPageIfNeeded()
+      doc.text(line, contentX, y)
+      y += lineHeight
+    }
 
     newPageIfNeeded(30)
     y += 8
     doc.setFontSize(9)
     doc.setTextColor(100, 116, 139)
-    addLine('Confidential project report — LedgerStack')
+    addWrappedText('Confidential project report — LedgerStack', {
+      color: [100, 116, 139],
+    })
 
     return doc.output('arraybuffer')
   } catch {

@@ -1,9 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { JobIntelligenceSummary } from '@/components/job-intelligence-summary'
 import { LegalNotice } from '@/components/legal-notice'
-import type { JobIntelligenceReport } from '@/lib/job-intelligence-types'
 import { isUnlimited } from '@/lib/plan-entitlements'
 
 type TimelineEvent = {
@@ -17,13 +15,11 @@ type TimelineEvent = {
   client_name?: string
 }
 
-type ClaimAiPanelProps = {
+type JobTimelinePanelProps = {
   claimId: string
   projectId: string
   timelineRefreshKey?: number
   canGenerate: boolean
-  canExportPdf: boolean
-  canExportHtml: boolean
   aiSummariesLimit: number
   aiSummariesUsed: number
 }
@@ -67,9 +63,7 @@ function TimelineList({
   })
 
   if (!ordered.length) {
-    return (
-      <p className="text-sm text-muted-dim">No entries yet.</p>
-    )
+    return <p className="text-sm text-muted-dim">No entries yet.</p>
   }
 
   return (
@@ -79,42 +73,38 @@ function TimelineList({
           key={e.id || `${e.event_date}-${e.title}-${i}`}
           className="relative"
         >
-          <span className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-brand" />
+          <span className="absolute -left-[1.15rem] top-1.5 h-2 w-2 rounded-full bg-brand" />
           <p className="text-xs text-muted-dim">{formatEventWhen(e)}</p>
-          {showClaimName && e.client_name && (
-            <p className="text-xs font-medium text-muted">{e.client_name}</p>
-          )}
-          <p className="font-medium text-sm text-foreground">{e.title}</p>
-          {e.description && (
+          <p className="font-medium text-sm text-foreground">
+            {e.title}
+            {showClaimName && e.client_name ? (
+              <span className="text-muted font-normal"> · {e.client_name}</span>
+            ) : null}
+          </p>
+          {e.description ? (
             <p className="text-sm text-muted mt-0.5">{e.description}</p>
-          )}
-          {formatTimelineSource(e.source) && (
+          ) : null}
+          {formatTimelineSource(e.source) ? (
             <p className="text-[10px] uppercase tracking-wide text-muted-dim mt-1">
               {formatTimelineSource(e.source)}
             </p>
-          )}
+          ) : null}
         </li>
       ))}
     </ol>
   )
 }
 
-export function ClaimAiPanel({
+export function JobTimelinePanel({
   claimId,
   projectId,
   timelineRefreshKey = 0,
   canGenerate,
-  canExportPdf,
-  canExportHtml,
   aiSummariesLimit,
   aiSummariesUsed,
-}: ClaimAiPanelProps) {
-  const [report, setReport] = useState<JobIntelligenceReport | null>(null)
+}: JobTimelinePanelProps) {
   const [events, setEvents] = useState<TimelineEvent[]>([])
-  const [projectStatusEvents, setProjectStatusEvents] = useState<
-    TimelineEvent[]
-  >([])
-  const [loadingSummary, setLoadingSummary] = useState(false)
+  const [projectStatusEvents, setProjectStatusEvents] = useState<TimelineEvent[]>([])
   const [loadingTimeline, setLoadingTimeline] = useState(false)
   const [loadingStatusHistory, setLoadingStatusHistory] = useState(false)
   const [showFullTimeline, setShowFullTimeline] = useState(false)
@@ -181,24 +171,6 @@ export function ClaimAiPanel({
     }
   }
 
-  async function generateSummary() {
-    if (!canGenerate || aiAtLimit) return
-    setLoadingSummary(true)
-    setError(null)
-    const res = await fetch('/api/claim-summary', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ claim_id: claimId, project_id: projectId }),
-    })
-    const payload = await res.json().catch(() => ({}))
-    if (!res.ok) {
-      setError(payload.error || 'Could not generate summary')
-    } else if (payload.report) {
-      setReport(payload.report as JobIntelligenceReport)
-    }
-    setLoadingSummary(false)
-  }
-
   async function regenerateTimeline() {
     if (!canGenerate || aiAtLimit) return
     setLoadingTimeline(true)
@@ -221,55 +193,20 @@ export function ClaimAiPanel({
     setLoadingTimeline(false)
   }
 
-  function exportReport(format: 'pdf' | 'html') {
-    const url = `/api/export-report?claim_id=${claimId}&project_id=${projectId}&format=${format}`
-    window.open(url, '_blank')
-  }
-
   return (
     <section className="border border-border rounded-xl p-4 bg-surface-elevated space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-bold text-lg text-foreground">Job intelligence</h2>
-        <div className="flex flex-wrap gap-2">
-          {canGenerate && (
-            <>
-              <button
-                type="button"
-                onClick={generateSummary}
-                disabled={loadingSummary || aiAtLimit}
-                className="text-sm btn-primary text-[#052e16] px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
-              >
-                {loadingSummary ? 'Generating…' : 'AI summary'}
-              </button>
-              <button
-                type="button"
-                onClick={regenerateTimeline}
-                disabled={loadingTimeline || aiAtLimit}
-                className="text-sm border border-border px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
-              >
-                {loadingTimeline ? 'Updating…' : 'Refresh timeline'}
-              </button>
-            </>
-          )}
-          {canExportPdf && (
-            <button
-              type="button"
-              onClick={() => exportReport('pdf')}
-              className="text-sm border border-border px-3 py-2 rounded-lg min-h-[40px]"
-            >
-              Export PDF
-            </button>
-          )}
-          {canExportHtml && !canExportPdf && (
-            <button
-              type="button"
-              onClick={() => exportReport('html')}
-              className="text-sm border border-border px-3 py-2 rounded-lg min-h-[40px]"
-            >
-              Export HTML
-            </button>
-          )}
-        </div>
+        <h2 className="font-bold text-lg text-foreground">Job timeline</h2>
+        {canGenerate && (
+          <button
+            type="button"
+            onClick={regenerateTimeline}
+            disabled={loadingTimeline || aiAtLimit}
+            className="text-sm border border-border px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
+          >
+            {loadingTimeline ? 'Updating…' : 'Refresh timeline'}
+          </button>
+        )}
       </div>
 
       {!isUnlimited(aiSummariesLimit) && (
@@ -366,9 +303,6 @@ export function ClaimAiPanel({
       </div>
 
       <LegalNotice id="ai" />
-      {(canExportPdf || canExportHtml) && <LegalNotice id="export-backup" />}
-
-      {report && <JobIntelligenceSummary report={report} />}
     </section>
   )
 }

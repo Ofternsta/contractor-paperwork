@@ -13,6 +13,10 @@ import {
   type JobIntelligenceSection,
   type JobIntelligenceSectionId,
 } from '@/lib/job-intelligence-types'
+import {
+  joinSectionEntries,
+  normalizeReportBodies,
+} from '@/lib/report-body-format'
 
 function formatWhen(iso: string | null | undefined) {
   if (!iso) return '—'
@@ -70,54 +74,53 @@ export function buildFallbackReport(ctx: JobIntelligenceContext): JobIntelligenc
   const timelineBody =
     ctx.timelineEvents.length === 0
       ? 'No timeline entries yet.'
-      : ctx.timelineEvents
-          .map(
+      : joinSectionEntries(
+          ctx.timelineEvents.map(
             (e) =>
-              `• ${formatWhen(e.created_at || e.event_date)} — ${e.client_name}: ${e.title}. ${e.description}`
+              `${formatWhen(e.created_at || e.event_date)} — ${e.client_name}: ${e.title}. ${e.description}`
           )
-          .join('\n')
+        )
 
   const notesBody =
     ctx.internalNotes.length === 0
       ? 'No internal notes.'
-      : ctx.internalNotes
-          .map(
+      : joinSectionEntries(
+          ctx.internalNotes.map(
             (n) =>
-              `• ${formatWhen(n.created_at)} — ${n.author_name} (${n.note_kind}): ${n.body}`
+              `${formatWhen(n.created_at)} — ${n.author_name} (${n.note_kind}): ${n.body}`
           )
-          .join('\n')
+        )
 
   const messagesBody =
     ctx.projectMessages.length === 0
       ? 'No project messages.'
-      : ctx.projectMessages
-          .map(
-            (m) =>
-              `• ${formatWhen(m.created_at)} — ${m.sender_label}: ${m.body}`
+      : joinSectionEntries(
+          ctx.projectMessages.map(
+            (m) => `${formatWhen(m.created_at)} — ${m.sender_label}: ${m.body}`
           )
-          .join('\n')
+        )
 
   const scheduleBody =
     ctx.scheduleEvents.length === 0
       ? 'No scheduled events.'
-      : ctx.scheduleEvents
-          .map((ev) => {
+      : joinSectionEntries(
+          ctx.scheduleEvents.map((ev) => {
             const done = ev.completed_at ? ' (done)' : ''
-            return `• ${formatWhen(String(ev.starts_at || ''))} — ${ev.title || 'Event'}: ${ev.description || ''}${done}`
+            return `${formatWhen(String(ev.starts_at || ''))} — ${ev.title || 'Event'}: ${ev.description || ''}${done}`
           })
-          .join('\n')
+        )
 
   const documentsBody =
     ctx.evidence.length === 0
       ? 'No documents uploaded.'
-      : [
+      : joinSectionEntries([
           `Total documents across project: ${ctx.evidence.length}`,
           `On this job: ${focusEvidence.length}`,
           ...ctx.evidence.map(
             (e) =>
-              `• ${formatWhen(e.created_at)} — ${e.client_name} [${e.evidence_type}] ${e.file_name}: ${e.summary}`
+              `${formatWhen(e.created_at)} — ${e.client_name} [${e.evidence_type}] ${e.file_name}: ${e.summary}`
           ),
-        ].join('\n')
+        ])
 
   const sections: JobIntelligenceSection[] = [
     { id: 'project_overview', title: JOB_INTELLIGENCE_SECTION_TITLES.project_overview, body: projectBody },
@@ -173,7 +176,7 @@ async function generateWithGroq(
     { "id": "documents", "title": "...", "body": "..." }
   ]
 }
-Use ONLY facts from the data. Each section body: clear paragraphs or bullet lines, chronological where relevant. Do not merge sections. If a category is empty, say so briefly.`,
+Use ONLY facts from the data. Each section body: one entry per line, separated by a blank line (double newline). Never join entries with commas on a single line. For messages always include sender name: "May 26, 2026, 11:21 PM — Name (Role): message text". Timeline, notes, schedule, and documents follow the same one-entry-per-paragraph rule. Do not merge sections. If a category is empty, say so briefly.`,
         },
         {
           role: 'user',
@@ -201,7 +204,7 @@ Use ONLY facts from the data. Each section body: clear paragraphs or bullet line
       }))
 
     const claimId = String(ctx.claim.id || '')
-    return {
+    return normalizeReportBodies({
       generatedAt: new Date().toISOString(),
       overview:
         parsed.overview?.trim() ||
@@ -211,7 +214,7 @@ Use ONLY facts from the data. Each section body: clear paragraphs or bullet line
       projectId: String(ctx.project.id),
       projectName: String(ctx.project.customer_name || 'Project'),
       jobLabel: String(ctx.claim.client_name || 'Job'),
-    }
+    })
   } catch (err) {
     console.error('Job intelligence summary failed:', err)
     return null
@@ -229,7 +232,7 @@ export async function generateJobIntelligenceReport(
   const ai = await generateWithGroq(ctx)
   if (ai) return ai
 
-  return buildFallbackReport(ctx)
+  return normalizeReportBodies(buildFallbackReport(ctx))
 }
 
 /** Flat text for legacy callers. */
