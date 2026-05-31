@@ -55,7 +55,41 @@ export function ProjectAiExportSection({
     setLoadingSummary(false)
   }
 
-  function exportReport(format: 'pdf' | 'html') {
+  async function exportReport(format: 'pdf' | 'html') {
+    if (report) {
+      const res = await fetch('/api/export-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          claim_id: claimId,
+          project_id: projectId,
+          format,
+          report,
+        }),
+      })
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}))
+        setError(payload.error || 'Export failed')
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download =
+        format === 'pdf'
+          ? `project-report-${report.jobLabel.replace(/[^a-zA-Z0-9.-]/g, '_')}.pdf`
+          : `project-report-${report.jobLabel.replace(/[^a-zA-Z0-9.-]/g, '_')}.html`
+      if (format === 'html') {
+        window.open(url, '_blank')
+        window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+      } else {
+        a.click()
+        URL.revokeObjectURL(url)
+      }
+      return
+    }
+
     const url = `/api/export-report?claim_id=${claimId}&project_id=${projectId}&format=${format}`
     window.open(url, '_blank')
   }
@@ -122,8 +156,8 @@ export function ProjectAiExportSection({
 
       {!report && canGenerate && !loadingSummary && (
         <p className="text-sm text-muted-dim">
-          Generate a categorized summary, then export a formatted PDF or HTML
-          packet with the same content.
+          Generate a categorized summary first. Export uses that same report so
+          the PDF matches what you see here.
         </p>
       )}
 

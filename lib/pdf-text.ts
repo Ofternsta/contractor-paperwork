@@ -10,11 +10,18 @@ export function normalizePdfCharacters(text: string): string {
     .replace(/[\u200B-\u200D\uFEFF]/g, '')
 }
 
+/** True when text looks like "S t a t u s" (spaces between individual letters). */
+export function hasGarbledLetterSpacing(text: string): boolean {
+  return /(?:^| )([A-Za-z0-9])(?: [A-Za-z0-9]){2,}(?: |$)/.test(text)
+}
+
 /**
- * Repair text where each letter was separated by spaces (common in garbled AI output).
- * "S t a t u s  u p d a t e d" -> "Status updated"
+ * Repair text where each letter was separated by spaces (garbled AI/PDF output only).
+ * Does not run on normal prose — avoids turning "is a" into "isa".
  */
 export function collapseLetterSpacing(text: string): string {
+  if (!hasGarbledLetterSpacing(text)) return text
+
   let prev = ''
   let current = text
   for (let i = 0; i < 24; i++) {
@@ -28,6 +35,12 @@ export function collapseLetterSpacing(text: string): string {
   return current.replace(/ {2,}/g, ' ').trim()
 }
 
+/** For list sections that may contain garbled spaced-out tokens. */
 export function sanitizeReportText(text: string): string {
   return collapseLetterSpacing(normalizePdfCharacters(text))
+}
+
+/** For narrative overview text — preserve normal word spacing. */
+export function sanitizePdfText(text: string): string {
+  return normalizePdfCharacters(text)
 }

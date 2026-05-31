@@ -1,20 +1,18 @@
 import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { gatherJobIntelligenceContext } from '@/lib/gather-job-intelligence'
 import {
-  formatJobIntelligencePrompt,
-  gatherJobIntelligenceContext,
-} from '@/lib/gather-job-intelligence'
+  buildFallbackOverview,
+  generateOverviewWithGroq,
+} from '@/lib/job-intelligence-overview'
 import {
-  JOB_INTELLIGENCE_SECTION_IDS,
   JOB_INTELLIGENCE_SECTION_TITLES,
   type JobIntelligenceContext,
   type JobIntelligenceReport,
   type JobIntelligenceSection,
-  type JobIntelligenceSectionId,
 } from '@/lib/job-intelligence-types'
-import { mergeStructuredReportSections } from '@/lib/merge-structured-report-sections'
-import { sanitizeReportText } from '@/lib/pdf-text'
+import { normalizePdfCharacters, sanitizeReportText } from '@/lib/pdf-text'
 import {
   joinSectionEntries,
   normalizeReportBodies,
@@ -27,19 +25,6 @@ function formatWhen(iso: string | null | undefined) {
   return new Date(t).toLocaleString(undefined, {
     dateStyle: 'medium',
     timeStyle: 'short',
-  })
-}
-
-function orderedSections(sections: JobIntelligenceSection[]): JobIntelligenceSection[] {
-  const byId = new Map(sections.map((s) => [s.id, s]))
-  return JOB_INTELLIGENCE_SECTION_IDS.map((id) => {
-    const existing = byId.get(id)
-    if (existing) return existing
-    return {
-      id,
-      title: JOB_INTELLIGENCE_SECTION_TITLES[id],
-      body: 'No activity recorded in this category yet.',
-    }
   })
 }
 
@@ -137,92 +122,14 @@ export function buildFallbackReport(ctx: JobIntelligenceContext): JobIntelligenc
     { id: 'documents', title: JOB_INTELLIGENCE_SECTION_TITLES.documents, body: documentsBody },
   ]
 
-  const overview = `Project for ${ctx.project.customer_name} at ${ctx.project.project_address}. Focus job ${ctx.claim.client_name} is ${ctx.claim.status} with ${focusEvidence.length} document(s), ${ctx.timelineEvents.length} timeline entries, ${ctx.internalNotes.length} internal note(s), ${ctx.projectMessages.length} message(s), and ${ctx.scheduleEvents.length} calendar event(s) since the project began.`
-
   return {
     generatedAt: new Date().toISOString(),
-    overview,
+    overview: buildFallbackOverview(ctx),
     sections,
     claimId: focusClaimId,
     projectId: String(ctx.project.id),
     projectName: String(ctx.project.customer_name || 'Project'),
     jobLabel: String(ctx.claim.client_name || 'Job'),
-  }
-}
-
-async function generateWithGroq(
-  ctx: JobIntelligenceContext
-): Promise<JobIntelligenceReport | null> {
-  const apiKey = process.env.GROQ_API_KEY
-  if (!apiKey) return null
-
-  try {
-    const { default: Groq } = await import('groq-sdk')
-    const groq = new Groq({ apiKey })
-    const dataBlock = formatJobIntelligencePrompt(ctx)
-
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
-      temperature: 0.2,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: `You write detailed contractor project reports from field data. Return JSON only:
-{
-  "overview": "Detailed AI narrative (4-8 sentences) synthesizing the full project story since start — place this last in the report; sections above hold categorized facts",
-  "sections": [
-    { "id": "project_overview", "title": "...", "body": "..." },
-    { "id": "job_status", "title": "...", "body": "..." },
-    { "id": "timeline", "title": "...", "body": "..." },
-    { "id": "internal_notes", "title": "...", "body": "..." },
-    { "id": "messages", "title": "...", "body": "..." },
-    { "id": "schedule", "title": "...", "body": "..." },
-    { "id": "documents", "title": "...", "body": "..." }
-  ]
-}
-Use ONLY facts from the data. Each section body: one entry per line, separated by a blank line (double newline). Never join entries with commas on a single line. For messages always include sender name: "May 26, 2026, 11:21 PM — Name (Role): message text". Timeline, notes, schedule, and documents follow the same one-entry-per-paragraph rule. Do not merge sections. If a category is empty, say so briefly.`,
-        },
-        {
-          role: 'user',
-          content: dataBlock,
-        },
-      ],
-    })
-
-    const raw = completion.choices?.[0]?.message?.content?.trim()
-    if (!raw) return null
-
-    const parsed = JSON.parse(raw) as {
-      overview?: string
-      sections?: Array<{ id?: string; title?: string; body?: string }>
-    }
-
-    const sections: JobIntelligenceSection[] = (parsed.sections || [])
-      .filter((s) => s.body && s.id && JOB_INTELLIGENCE_SECTION_IDS.includes(s.id as JobIntelligenceSectionId))
-      .map((s) => ({
-        id: s.id as JobIntelligenceSectionId,
-        title:
-          s.title?.trim() ||
-          JOB_INTELLIGENCE_SECTION_TITLES[s.id as JobIntelligenceSectionId],
-        body: String(s.body).trim(),
-      }))
-
-    const claimId = String(ctx.claim.id || '')
-    return normalizeReportBodies({
-      generatedAt: new Date().toISOString(),
-      overview:
-        parsed.overview?.trim() ||
-        buildFallbackReport(ctx).overview,
-      sections: orderedSections(sections),
-      claimId,
-      projectId: String(ctx.project.id),
-      projectName: String(ctx.project.customer_name || 'Project'),
-      jobLabel: String(ctx.claim.client_name || 'Job'),
-    })
-  } catch (err) {
-    console.error('Job intelligence summary failed:', err)
-    return null
   }
 }
 
@@ -235,12 +142,13 @@ export async function generateJobIntelligenceReport(
   if (!ctx) return null
 
   const factual = normalizeReportBodies(buildFallbackReport(ctx))
-  const ai = await generateWithGroq(ctx)
-  if (ai) {
-    return normalizeReportBodies(mergeStructuredReportSections(ai, factual))
-  }
+  const overview =
+    (await generateOverviewWithGroq(ctx)) ?? buildFallbackOverview(ctx)
 
-  return factual
+  return {
+    ...factual,
+    overview: normalizePdfCharacters(overview),
+  }
 }
 
 /** Flat text for legacy callers. */

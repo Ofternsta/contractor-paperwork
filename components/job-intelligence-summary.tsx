@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react'
 import type { JobIntelligenceReport } from '@/lib/job-intelligence-types'
 import { expandBodyToDisplayLines } from '@/lib/report-body-format'
-import { sanitizeReportText } from '@/lib/pdf-text'
+import { sanitizePdfText, sanitizeReportText } from '@/lib/pdf-text'
 
 type JobIntelligenceSummaryProps = {
   report: JobIntelligenceReport
@@ -92,7 +92,7 @@ export function JobIntelligenceSummary({ report }: JobIntelligenceSummaryProps) 
           AI summary
         </h3>
         <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
-          {report.overview}
+          {sanitizePdfText(report.overview)}
         </p>
       </div>
     </div>

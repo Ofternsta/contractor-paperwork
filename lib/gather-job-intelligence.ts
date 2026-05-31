@@ -3,6 +3,7 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { JobIntelligenceContext } from '@/lib/job-intelligence-types'
 import { listEvidence } from '@/lib/evidence-storage'
+import { formatParticipantsBlock } from '@/lib/job-intelligence-participants'
 import { enrichMessageSenders } from '@/lib/message-sender-labels'
 import { SCHEDULE_EVENT_LABELS, isScheduleEventType } from '@/lib/schedule-types'
 
@@ -167,15 +168,19 @@ export function formatJobIntelligencePrompt(ctx: JobIntelligenceContext): string
     String(ctx.project.created_at || '')
   )
   const lines: string[] = [
+    '=== ROLES (read carefully) ===',
+    formatParticipantsBlock(ctx),
+    '',
     '=== PROJECT ===',
-    `Customer: ${ctx.project.customer_name}`,
+    `Customer (property owner): ${ctx.project.customer_name}`,
     `Address: ${ctx.project.project_address}`,
     `Project notes: ${ctx.project.notes || '(none)'}`,
     `Project created: ${projectStarted}`,
     `Jobs on project: ${ctx.allClaims.length}`,
     '',
     '=== FOCUS JOB ===',
-    `Client: ${ctx.claim.client_name}`,
+    `Job label / client name on file: ${ctx.claim.client_name}`,
+    `Job reference number: ${ctx.claim.claim_number}`,
     `Property: ${ctx.claim.property_address}`,
     `Loss: ${ctx.claim.loss_type}`,
     `Insurer: ${ctx.claim.insurance_company}`,

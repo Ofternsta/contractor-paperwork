@@ -1,6 +1,6 @@
 import type { JobIntelligenceReport } from '@/lib/job-intelligence-types'
 import { expandBodyToDisplayLines } from '@/lib/report-body-format'
-import { sanitizeReportText } from '@/lib/pdf-text'
+import { sanitizePdfText, sanitizeReportText } from '@/lib/pdf-text'
 
 export function escapeHtml(text: string) {
   return text
@@ -156,7 +156,7 @@ export function buildHtmlJobReport(report: JobIntelligenceReport) {
 
   <div class="overview-card ai-summary-block">
     <h2>AI summary</h2>
-    <p>${escapeHtml(report.overview)}</p>
+    <p>${escapeHtml(sanitizePdfText(report.overview))}</p>
   </div>
 
   <p class="footer">Confidential project report — LedgerStack</p>
@@ -300,7 +300,7 @@ export async function buildPdfJobReport(
     }
 
     addSectionTitle('AI summary')
-    printLines(wrapLines(report.overview), contentX)
+    printLines(wrapLines(sanitizePdfText(report.overview)), contentX)
 
     newPageIfNeeded(30)
     y += 8
