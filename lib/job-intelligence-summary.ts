@@ -37,7 +37,7 @@ export function buildFallbackReport(ctx: JobIntelligenceContext): JobIntelligenc
     `Address: ${ctx.project.project_address}`,
     `Project started: ${formatWhen(String(ctx.project.created_at || ''))}`,
     ctx.project.notes
-      ? `Project notes: ${ctx.project.notes}`
+      ? `Legacy project description: ${ctx.project.notes}`
       : null,
     `${ctx.allClaims.length} job(s) on this project.`,
     ...ctx.allClaims.map(
@@ -53,7 +53,7 @@ export function buildFallbackReport(ctx: JobIntelligenceContext): JobIntelligenc
     `Loss type: ${ctx.claim.loss_type}`,
     `Insurer: ${ctx.claim.insurance_company}`,
     `Job number: ${ctx.claim.claim_number}`,
-    ctx.claim.notes ? `Job notes: ${ctx.claim.notes}` : null,
+    ctx.claim.notes ? `Job description: ${ctx.claim.notes}` : null,
   ]
     .filter(Boolean)
     .join('\n')

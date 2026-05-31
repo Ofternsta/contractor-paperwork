@@ -23,13 +23,14 @@ import { EvidenceUpload } from '@/components/evidence-upload'
 import { LedgerStackLoader } from '@/components/ledgerstack-loader'
 import { InternalNotesPanel } from '@/components/internal-notes-panel'
 import { MessagePanel } from '@/components/message-panel'
-import { ProjectJobsList } from '@/components/project-jobs-list'
+import { AddJobDialog, ProjectJobsList } from '@/components/project-jobs-list'
 import { ProjectSchedulePanel } from '@/components/project-schedule-panel'
 import { isUnlimited } from '@/lib/plan-entitlements'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
 import type { WorkerPermissions } from '@/lib/worker-permissions'
 import { supabase } from '@/lib/supabase'
+import { displayJobDescription } from '@/lib/job-display-notes'
 import { uploadEvidenceWithAi } from '@/lib/upload-evidence-server'
 import { validateUploadSize } from '@/lib/upload-limits'
 
@@ -78,6 +79,7 @@ export default function ProjectPageClient() {
     defaultFileCategories()
   )
   const [projectNotes, setProjectNotes] = useState<string | null>(null)
+  const [addJobOpen, setAddJobOpen] = useState(false)
 
   function mergeWorkerProjectAccess(
     base: UserAccess,
@@ -153,6 +155,7 @@ export default function ProjectPageClient() {
       .from('claims')
       .select('id, client_name, property_address, status, notes')
       .eq('project_id', id)
+      .order('created_at', { ascending: true })
 
     if (error) {
       console.error(error)
@@ -437,7 +440,8 @@ export default function ProjectPageClient() {
           </p>
         )}
 
-        <label className="block lg:hidden">
+        <div className="flex flex-wrap items-end gap-2 lg:hidden">
+        <label className="block flex-1 min-w-[200px]">
           <span className="text-sm font-medium text-muted mb-1 block">
             Active job
           </span>
@@ -449,20 +453,56 @@ export default function ProjectPageClient() {
               if (claim) setSelectedClaim(claim)
             }}
           >
-            {claims.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.client_name} — {statusLabel(c.status, statusWorkflow)}
-              </option>
-            ))}
+            {claims.map((c) => {
+              const label =
+                displayJobDescription(c.notes, projectNotes) || c.client_name
+              return (
+                <option key={c.id} value={c.id}>
+                  {label} — {statusLabel(c.status, statusWorkflow)}
+                </option>
+              )
+            })}
           </select>
         </label>
+        {access.canCreateProject && (
+          <button
+            type="button"
+            onClick={() => setAddJobOpen(true)}
+            className="text-sm border border-border px-3 py-2 rounded-lg min-h-[40px] shrink-0"
+          >
+            Add a job
+          </button>
+        )}
+        </div>
+
+        {addJobOpen && (
+          <AddJobDialog
+            projectId={id}
+            onClose={() => setAddJobOpen(false)}
+            onAdded={(job) => {
+              const claim = job as Claim
+              setClaims((prev) => [...prev, claim])
+              setSelectedClaim(claim)
+              setAddJobOpen(false)
+              void fetchEvidence(claim.id)
+            }}
+          />
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
           <ProjectJobsList
             jobs={claims}
-            projectNotes={projectNotes}
+            projectId={id}
+            legacyProjectNotes={projectNotes}
             workflow={statusWorkflow}
             selectedId={selectedClaim?.id ?? null}
+            canAddJob={access.canCreateProject}
+            onJobAdded={(job) => {
+              const claim = job as Claim
+              setClaims((prev) => [...prev, claim])
+              setSelectedClaim(claim)
+              void fetchEvidence(claim.id)
+            }}
             onSelect={(job) => {
               const claim = claims.find((c) => c.id === job.id)
               if (claim) setSelectedClaim(claim)
@@ -473,7 +513,8 @@ export default function ProjectPageClient() {
             <ProjectJobsList
               variant="summary"
               jobs={claims}
-              projectNotes={projectNotes}
+              projectId={id}
+              legacyProjectNotes={projectNotes}
               workflow={statusWorkflow}
               selectedId={selectedClaim?.id ?? null}
               onSelect={(job) => {

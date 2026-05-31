@@ -29,7 +29,7 @@ export default function ProjectsPage() {
   const [accessLoading, setAccessLoading] = useState(true)
   const [customerName, setCustomerName] = useState('')
   const [projectAddress, setProjectAddress] = useState('')
-  const [notes, setNotes] = useState('')
+  const [jobDescription, setJobDescription] = useState('')
   const [projects, setProjects] = useState<Project[]>([])
   const [creating, setCreating] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -110,7 +110,14 @@ export default function ProjectsPage() {
   }
 
   async function createProject() {
-    if (!customerName.trim() || !projectAddress.trim() || !access) return
+    if (
+      !customerName.trim() ||
+      !projectAddress.trim() ||
+      !jobDescription.trim() ||
+      !access
+    ) {
+      return
+    }
     if (!access.canCreateProject || !access.organizationId) return
 
     setCreating(true)
@@ -121,7 +128,7 @@ export default function ProjectsPage() {
       body: JSON.stringify({
         customer_name: customerName,
         project_address: projectAddress,
-        notes,
+        job_description: jobDescription,
       }),
     })
     const payload = await res.json().catch(() => ({}))
@@ -137,7 +144,7 @@ export default function ProjectsPage() {
 
     setCustomerName('')
     setProjectAddress('')
-    setNotes('')
+    setJobDescription('')
     await fetchProjects(access.role)
     setCreating(false)
   }
@@ -290,18 +297,27 @@ export default function ProjectsPage() {
               onChange={(e) => setProjectAddress(e.target.value)}
             />
 
-            <textarea
-              className="border border-border rounded-xl p-3 w-full min-h-[88px]"
-              placeholder="Notes (optional)"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
+            <label className="block space-y-1">
+              <span className="text-sm font-medium text-foreground">
+                Job description <span className="text-red-600">*</span>
+              </span>
+              <textarea
+                className="border border-border rounded-xl p-3 w-full min-h-[88px]"
+                placeholder="Describe the work for this job"
+                value={jobDescription}
+                onChange={(e) => setJobDescription(e.target.value)}
+                required
+              />
+            </label>
 
             <button
               type="button"
               onClick={createProject}
               disabled={
-                creating || !customerName.trim() || !projectAddress.trim()
+                creating ||
+                !customerName.trim() ||
+                !projectAddress.trim() ||
+                !jobDescription.trim()
               }
               className="w-full btn-primary text-[#052e16] py-4 rounded-xl font-medium disabled:opacity-50 min-h-[52px]"
             >

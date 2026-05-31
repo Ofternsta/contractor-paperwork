@@ -26,8 +26,8 @@ export const GUIDE_PARTS: GuidePart[] = [
         title: 'Core concepts',
         bullets: [
           'Organization — your company; billing and settings apply to the whole org.',
-          'Project — a customer job site (name, address, notes). Creating a project also creates one job.',
-          'Job — the unit of work inside a project (name, current status, notes, timeline, files). The UI says “jobs”; the database still uses a legacy “claims” table.',
+          'Project — a customer job site (name, address). Creating a project also creates one job with a required job description.',
+          'Job — the unit of work inside a project (job description, current status, timeline, files). Admins can add more jobs to the same project. The UI says “jobs”; the database still uses a legacy “claims” table.',
           'Documents — photos, PDFs, and videos stored in category folders (Site Photo, Estimate, etc.).',
           'Roles — Admin (owner), Worker (field crew), Client (view-only on what you share).',
         ],
@@ -132,7 +132,7 @@ export const GUIDE_PARTS: GuidePart[] = [
         id: 'projects-list',
         title: 'Projects list (/projects)',
         paragraphs: [
-          'Admins see all organization projects, can create new ones (customer name, address, optional notes), and delete projects with confirmation. A plan banner appears when you hit the active project limit.',
+          'Admins see all organization projects, can create new ones (customer name, address, required job description), and delete projects with confirmation. A plan banner appears when you hit the active project limit.',
           'Workers see only assigned projects. Clients see only shared projects.',
         ],
       },
@@ -155,7 +155,7 @@ export const GUIDE_PARTS: GuidePart[] = [
         id: 'jobs-sidebar',
         title: 'Jobs sidebar',
         paragraphs: [
-          'The left column lists jobs for this project. Each row shows name, current status, and creation notes. Select a job to work on its timeline, files, and status controls.',
+          'The left column lists jobs for this project. Each row shows job description and current status. Admins use Add a job to add another job with its own description. Select a job to work on its timeline, files, and status controls.',
           'Admins advance jobs through customizable stages (default: Inspection → Documentation → Estimate Sent → Approved → In Progress → Completed). Completing a job triggers a confirmation that explains retention. Workers and clients see status but cannot change it.',
         ],
       },

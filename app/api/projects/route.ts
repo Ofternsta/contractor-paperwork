@@ -67,7 +67,12 @@ export async function POST(req: Request) {
       projectAddress: String(
         body.project_address || body.projectAddress || ''
       ),
-      notes: String(body.notes || ''),
+      jobDescription: String(
+        body.job_description ||
+          body.jobDescription ||
+          body.notes ||
+          ''
+      ).trim(),
     })
 
     if (result.error) {

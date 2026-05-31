@@ -15,7 +15,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 export type CreateProjectInput = {
   customerName: string
   projectAddress: string
-  notes?: string
+  jobDescription: string
 }
 
 async function userMayCreateInOrg(userId: string, organizationId: string) {
@@ -37,10 +37,14 @@ export async function createProjectForUser(
 ) {
   const customerName = input.customerName.trim()
   const projectAddress = input.projectAddress.trim()
-  const notes = input.notes?.trim() || ''
+  const jobDescription = input.jobDescription.trim()
 
   if (!customerName || !projectAddress) {
     return { error: 'Customer name and project address are required.' }
+  }
+
+  if (!jobDescription) {
+    return { error: 'Job description is required.' }
   }
 
   if (!(await userMayCreateInOrg(userId, organizationId))) {
@@ -66,7 +70,7 @@ export async function createProjectForUser(
     .insert({
       customer_name: customerName,
       project_address: projectAddress,
-      notes,
+      notes: '',
       user_id: userId,
       organization_id: organizationId,
       status_workflow: serializeProjectStatusWorkflow(workflow),
@@ -93,7 +97,7 @@ export async function createProjectForUser(
       insurance_company: 'Unknown',
       claim_number: `AUTO-${Date.now()}`,
       status: initialStatus,
-      notes: notes || null,
+      notes: jobDescription,
     })
     .select('id')
 
