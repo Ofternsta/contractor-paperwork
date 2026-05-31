@@ -59,24 +59,17 @@ export async function GET(req: Request) {
       )
     }
 
+    const canExport =
+      planCtx.entitlements.standardPdfExport ||
+      planCtx.entitlements.claimPacketExport
+
     const wantsPdf = format === 'pdf'
-    if (
-      wantsPdf &&
-      !planCtx.entitlements.standardPdfExport &&
-      !planCtx.entitlements.claimPacketExport
-    ) {
+    if (!canExport) {
       return NextResponse.json(
         {
           error:
-            'PDF export is not included on your plan. Use HTML preview or upgrade to Starter.',
+            'Exports are not included on your plan. Upgrade to Starter or higher.',
         },
-        { status: 403 }
-      )
-    }
-
-    if (!wantsPdf && !planCtx.entitlements.exportWatermark && !planCtx.entitlements.standardPdfExport) {
-      return NextResponse.json(
-        { error: 'Exports are not available on your current plan.' },
         { status: 403 }
       )
     }
@@ -94,18 +87,13 @@ export async function GET(req: Request) {
 
     const evidence = await listEvidence(supabase, projectId, claimId)
     const summary = await generateClaimSummary(claim, evidence)
-    const watermark = planCtx.entitlements.exportWatermark
-    const branded = planCtx.entitlements.brandedExports
-    const footerBrand = branded
-      ? String(claim.client_name || 'LedgerStack')
-      : 'LedgerStack'
     const safeName = `job-${claim.claim_number || claimId}`.replace(
       /[^a-zA-Z0-9.-]/g,
       '_'
     )
 
     if (format === 'html') {
-      const html = buildHtmlReport(claim, summary, evidence, watermark)
+      const html = buildHtmlReport(claim, summary, evidence)
       return new NextResponse(html, {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
@@ -114,7 +102,7 @@ export async function GET(req: Request) {
       })
     }
 
-    const pdfBytes = await buildPdfReport(claim, summary, evidence, watermark)
+    const pdfBytes = await buildPdfReport(claim, summary, evidence)
 
     if (pdfBytes) {
       return new NextResponse(pdfBytes, {
@@ -125,12 +113,11 @@ export async function GET(req: Request) {
       })
     }
 
-    const html = buildHtmlReport(claim, summary, evidence, watermark)
+    const html = buildHtmlReport(claim, summary, evidence)
     return new NextResponse(html, {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
         'Content-Disposition': `inline; filename="${safeName}.html"`,
-        'X-LedgerStack-Brand': footerBrand,
       },
     })
   } catch (err: unknown) {

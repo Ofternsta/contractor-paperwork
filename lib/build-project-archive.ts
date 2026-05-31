@@ -36,13 +36,12 @@ async function downloadStorageFile(
 export type ProjectArchiveInput = {
   supabase: SupabaseClient
   projectId: string
-  exportWatermark: boolean
 }
 
 export async function buildProjectArchiveZip(
   input: ProjectArchiveInput
 ): Promise<{ buffer: Buffer; filename: string }> {
-  const { supabase, projectId, exportWatermark } = input
+  const { supabase, projectId } = input
 
   const { data: project, error: projectError } = await supabase
     .from('projects')
@@ -212,10 +211,10 @@ export async function buildProjectArchiveZip(
     }
     appendJson(zip, `${base}/report-intelligence.json`, intelligence)
 
-    const html = buildHtmlReport(claim, summary, evidence, exportWatermark)
+    const html = buildHtmlReport(claim, summary, evidence)
     zip.file(`${base}/report.html`, html)
 
-    const pdfBytes = await buildPdfReport(claim, summary, evidence, exportWatermark)
+    const pdfBytes = await buildPdfReport(claim, summary, evidence)
     if (pdfBytes) {
       zip.file(`${base}/report.pdf`, pdfBytes)
     }

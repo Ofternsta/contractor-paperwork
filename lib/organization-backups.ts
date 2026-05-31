@@ -33,9 +33,7 @@ export async function orgCanUseBackups(
   const planCtx = await getOrgPlanContext(supabase, organizationId)
   if (!planCtx) return false
   const ent = planCtx.entitlements
-  return Boolean(
-    ent.standardPdfExport || ent.claimPacketExport || ent.exportWatermark
-  )
+  return ent.maxOrganizationBackups > 0
 }
 
 export async function loadBackupSettings(
@@ -110,14 +108,12 @@ export async function backupProject(
   service: SupabaseClient,
   organizationId: string,
   projectId: string,
-  backupType: BackupType,
-  exportWatermark: boolean
+  backupType: BackupType
 ): Promise<{ backupId?: string; error?: string }> {
   const backupId = crypto.randomUUID()
   const { buffer, filename } = await buildProjectArchiveZip({
     supabase: service,
     projectId,
-    exportWatermark,
   })
 
   const storagePath = `${organizationId}/${backupId}/${filename}`
@@ -185,9 +181,6 @@ export async function runScheduledBackupForOrg(
     return { backedUp: 0, error: 'Plan does not include backups' }
   }
 
-  const planCtx = await getOrgPlanContext(service, organizationId)
-  const exportWatermark = planCtx?.entitlements.exportWatermark ?? false
-
   const { data: projects } = await service
     .from('projects')
     .select('id')
@@ -201,8 +194,7 @@ export async function runScheduledBackupForOrg(
       service,
       organizationId,
       project.id,
-      backupType,
-      exportWatermark
+      backupType
     )
     if (result.error) {
       lastError = result.error
@@ -269,15 +261,11 @@ export async function triggerProjectCompletedBackup(
 
   if (!(await orgCanUseBackups(service, organizationId))) return
 
-  const planCtx = await getOrgPlanContext(service, organizationId)
-  const exportWatermark = planCtx?.entitlements.exportWatermark ?? false
-
   await backupProject(
     service,
     organizationId,
     projectId,
-    'report_completed',
-    exportWatermark
+    'report_completed'
   )
 }
 

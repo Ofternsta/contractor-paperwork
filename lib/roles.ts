@@ -45,7 +45,6 @@ export type UserAccess = {
   canUseTeamMessages: boolean
   canUseClaimPacketExport: boolean
   canArchiveProject: boolean
-  exportHasWatermark: boolean
 }
 
 export function buildAccess(input: {
@@ -97,9 +96,7 @@ export function buildAccess(input: {
     Boolean(ent?.standardPdfExport || ent?.claimPacketExport)
   const canExportHtml =
     staffCapable &&
-    (Boolean(ent?.standardPdfExport) ||
-      Boolean(ent?.exportWatermark) ||
-      Boolean(ent?.claimPacketExport))
+    Boolean(ent?.standardPdfExport || ent?.claimPacketExport)
 
   let canCreateProject = isAdmin
   if (hasPlan && ent && ent.maxActiveProjects >= 0) {
@@ -150,11 +147,6 @@ export function buildAccess(input: {
     canArchiveProject:
       isAdmin &&
       hasPlan &&
-      Boolean(
-        ent?.claimPacketExport ||
-          ent?.standardPdfExport ||
-          ent?.exportWatermark
-      ),
-    exportHasWatermark: Boolean(ent?.exportWatermark),
+      Boolean(ent?.claimPacketExport || ent?.standardPdfExport),
   }
 }

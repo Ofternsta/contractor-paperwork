@@ -39,10 +39,10 @@ export const GUIDE_PARTS: GuidePart[] = [
           'Every company picks a plan after admin signup. Limits on projects, staff, AI usage, and features depend on the tier.',
         ],
         bullets: [
-          'Trial — 7 days, card required; 2 projects, 10 AI summaries/month, images/PDF only, watermarked export preview; no workers, clients, calendar, or team chat.',
+          'Trial — 7 days, card required; 2 projects, 10 AI summaries/month, images/PDF only; no exports, workers, clients, calendar, or team chat.',
           'Starter ($20/mo) — solo contractor; 25 projects, standard PDF export, automatic backups (5 retained).',
-          'Professional ($70/mo) — up to 15 workers, 100 projects, client portal, calendar, internal notes, project messages, DM/group chat, branded exports, job packets, analytics, backups (15).',
-          'Enterprise ($150/mo) — unlimited staff and projects, unlimited AI, advanced analytics, backups (30), white-label export templates.',
+          'Professional ($70/mo) — up to 15 workers, 100 projects, client portal, calendar, internal notes, project messages, DM/group chat, job packet exports, analytics, backups (15).',
+          'Enterprise ($150/mo) — unlimited staff and projects, unlimited AI, advanced analytics, backups (30).',
         ],
       },
     ],
@@ -163,7 +163,7 @@ export const GUIDE_PARTS: GuidePart[] = [
         id: 'ai-export',
         title: 'Job intelligence, AI & exports',
         paragraphs: [
-          'The job intelligence panel (staff only, not clients) can generate an AI summary of the job, refresh an AI-built timeline, show status history, and export a PDF or HTML job packet. Trial plans watermark exports; higher tiers unlock standard and branded exports and full job packets on Professional+.',
+          'The job intelligence panel (staff only, not clients) can generate an AI summary of the job, refresh an AI-built timeline, show status history, and export a PDF or HTML job packet. Exports start on Starter (PDF); full job packets and project archives are on Professional+.',
           'Monthly AI usage is capped by plan and shown on project pages. Uploads can be auto-categorized and summarized; admins can re-scan a file, edit its summary, or move it to another category from the expanded file detail view.',
         ],
       },

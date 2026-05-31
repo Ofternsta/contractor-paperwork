@@ -45,8 +45,7 @@ export async function GET(req: Request) {
 
     const canArchive =
       planCtx.entitlements.standardPdfExport ||
-      planCtx.entitlements.claimPacketExport ||
-      planCtx.entitlements.exportWatermark
+      planCtx.entitlements.claimPacketExport
 
     if (!canArchive) {
       return NextResponse.json(
@@ -61,7 +60,6 @@ export async function GET(req: Request) {
     const { buffer, filename } = await buildProjectArchiveZip({
       supabase,
       projectId,
-      exportWatermark: planCtx.entitlements.exportWatermark,
     })
 
     return new NextResponse(new Uint8Array(buffer), {

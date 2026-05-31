@@ -532,7 +532,6 @@ export default function ProjectPageClient() {
                 canGenerate={access.canUpdateClaimInfo}
                 canExportPdf={access.canExportPdf}
                 canExportHtml={access.canExportHtml}
-                exportHasWatermark={access.exportHasWatermark}
                 aiSummariesLimit={access.aiSummariesLimit}
                 aiSummariesUsed={access.aiSummariesUsed}
               />

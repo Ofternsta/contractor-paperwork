@@ -22,7 +22,6 @@ type ClaimAiPanelProps = {
   canGenerate: boolean
   canExportPdf: boolean
   canExportHtml: boolean
-  exportHasWatermark: boolean
   aiSummariesLimit: number
   aiSummariesUsed: number
 }
@@ -105,7 +104,6 @@ export function ClaimAiPanel({
   canGenerate,
   canExportPdf,
   canExportHtml,
-  exportHasWatermark,
   aiSummariesLimit,
   aiSummariesUsed,
 }: ClaimAiPanelProps) {
@@ -266,7 +264,7 @@ export function ClaimAiPanel({
               onClick={() => exportReport('html')}
               className="text-sm border border-border px-3 py-2 rounded-lg min-h-[40px]"
             >
-              {exportHasWatermark ? 'Preview export' : 'Export HTML'}
+              Export HTML
             </button>
           )}
         </div>
@@ -276,13 +274,6 @@ export function ClaimAiPanel({
         <p className="text-xs text-muted">
           AI summaries this month: {aiSummariesUsed} / {aiSummariesLimit}
           {aiAtLimit && ' — limit reached. Upgrade for more.'}
-        </p>
-      )}
-
-      {exportHasWatermark && canExportHtml && (
-        <p className="text-xs text-amber-200 bg-amber-950/40 border border-amber-800/50 rounded-lg p-2">
-          Trial exports include a watermark. Upgrade to Starter for standard PDF
-          exports.
         </p>
       )}
 

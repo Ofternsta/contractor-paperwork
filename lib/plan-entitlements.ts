@@ -12,9 +12,7 @@ export type PlanEntitlements = {
   maxUploadBytes: number
   /** Images + PDF only (no video) */
   basicUploadsOnly: boolean
-  exportWatermark: boolean
   standardPdfExport: boolean
-  brandedExports: boolean
   claimPacketExport: boolean
   clientPortal: boolean
   workerAccounts: boolean
@@ -35,9 +33,7 @@ export const PLAN_ENTITLEMENTS: Record<BillingPlanId, PlanEntitlements> = {
     aiSummariesPerMonth: 10,
     maxUploadBytes: 10 * 1024 * 1024,
     basicUploadsOnly: true,
-    exportWatermark: true,
     standardPdfExport: false,
-    brandedExports: false,
     claimPacketExport: false,
     clientPortal: false,
     workerAccounts: false,
@@ -55,9 +51,7 @@ export const PLAN_ENTITLEMENTS: Record<BillingPlanId, PlanEntitlements> = {
     aiSummariesPerMonth: 50,
     maxUploadBytes: 25 * 1024 * 1024,
     basicUploadsOnly: false,
-    exportWatermark: false,
     standardPdfExport: true,
-    brandedExports: false,
     claimPacketExport: false,
     clientPortal: false,
     workerAccounts: false,
@@ -75,9 +69,7 @@ export const PLAN_ENTITLEMENTS: Record<BillingPlanId, PlanEntitlements> = {
     aiSummariesPerMonth: 250,
     maxUploadBytes: 50 * 1024 * 1024,
     basicUploadsOnly: false,
-    exportWatermark: false,
     standardPdfExport: true,
-    brandedExports: true,
     claimPacketExport: true,
     clientPortal: true,
     workerAccounts: true,
@@ -95,9 +87,7 @@ export const PLAN_ENTITLEMENTS: Record<BillingPlanId, PlanEntitlements> = {
     aiSummariesPerMonth: -1,
     maxUploadBytes: 50 * 1024 * 1024,
     basicUploadsOnly: false,
-    exportWatermark: false,
     standardPdfExport: true,
-    brandedExports: true,
     claimPacketExport: true,
     clientPortal: true,
     workerAccounts: true,
@@ -129,7 +119,7 @@ export const PLAN_FEATURE_COPY: Record<
     excludes: [
       'Client portal & worker accounts',
       'Team chat, calendar & internal notes',
-      'Branded or advanced exports (watermarked preview)',
+      'PDF export & project archives',
       'Analytics dashboard & automation',
     ],
   },
@@ -144,8 +134,8 @@ export const PLAN_FEATURE_COPY: Record<
     excludes: [
       'Worker & client logins',
       'Internal notes, calendar & team messages',
-      'Analytics dashboard & branded exports',
-      'Branded export packets & client portal',
+      'Analytics dashboard',
+      'Full job packets & client portal',
     ],
   },
   professional: {
@@ -154,7 +144,7 @@ export const PLAN_FEATURE_COPY: Record<
       'Automatic cloud backups — 15 retained per organization',
       'Worker accounts, client portal & permissions',
       'Calendar, internal notes & team messages',
-      'Branded exports, job packets & analytics',
+      'Job packet exports, project archives & analytics',
       'Higher AI limits (250 summaries/month)',
     ],
   },
@@ -163,7 +153,7 @@ export const PLAN_FEATURE_COPY: Record<
       'Unlimited workers & active projects',
       'Automatic cloud backups — 30 retained per organization',
       'Advanced analytics & activity insights',
-      'White-label / branded export templates',
+      'Unlimited AI summaries',
       'Priority support & dedicated onboarding',
       'Enterprise options: SSO, API & integrations (contact us)',
     ],
@@ -178,9 +168,9 @@ export const PLAN_STRIPE_DESCRIPTIONS: Record<
   starter:
     'LedgerStack Starter ($20/mo) — For solo contractors: 1 user, up to 25 active projects, job timeline & workflow, AI summaries, standard PDF export, mobile field uploads, and automatic cloud backups (5 ZIPs retained per organization).',
   professional:
-    'LedgerStack Professional ($70/mo) — Coordinate crew and clients: up to 15 workers, client portal, scheduling, internal notes, team messages, branded exports, job packets, analytics dashboard, and automatic cloud backups (15 ZIPs retained per organization).',
+    'LedgerStack Professional ($70/mo) — Coordinate crew and clients: up to 15 workers, client portal, scheduling, internal notes, team messages, job packet exports, project archives, analytics dashboard, and automatic cloud backups (15 ZIPs retained per organization).',
   enterprise:
-    'LedgerStack Enterprise ($150/mo) — Company infrastructure: unlimited workers & projects, advanced analytics, branded/white-label exports, automatic cloud backups (30 ZIPs retained per organization), priority support, and onboarding. Ask about SSO, API access, audit logs, and custom integrations.',
+    'LedgerStack Enterprise ($150/mo) — Company infrastructure: unlimited workers & projects, advanced analytics, unlimited AI, automatic cloud backups (30 ZIPs retained per organization), priority support, and onboarding. Ask about SSO, API access, audit logs, and custom integrations.',
 }
 
 export function getPlanStripeDescription(

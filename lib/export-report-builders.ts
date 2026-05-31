@@ -8,14 +8,10 @@ export function escapeHtml(text: string) {
     .replace(/"/g, '&quot;')
 }
 
-export const TRIAL_WATERMARK =
-  'TRIAL — Upgrade to export without watermark · ledgerstack.org'
-
 export function buildHtmlReport(
   claim: Record<string, unknown>,
   summary: string,
-  evidence: EvidenceRecord[],
-  watermark: boolean
+  evidence: EvidenceRecord[]
 ) {
   const evidenceRows = evidence
     .map((e) => {
@@ -33,11 +29,7 @@ export function buildHtmlReport(
 h1{font-size:1.5rem}table{width:100%;border-collapse:collapse;margin-top:1rem}
 th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#f5f5f5}
 @media print{body{margin:0}}
-.watermark{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:bold;color:rgba(0,0,0,0.08);transform:rotate(-24deg);pointer-events:none;z-index:0}
-.content{position:relative;z-index:1}
 </style></head><body>
-${watermark ? `<div class="watermark" aria-hidden>${escapeHtml(TRIAL_WATERMARK)}</div>` : ''}
-<div class="content">
 <h1>Job — documents</h1>
 <p><strong>Client:</strong> ${escapeHtml(String(claim.client_name))}</p>
 <p><strong>Property:</strong> ${escapeHtml(String(claim.property_address))}</p>
@@ -50,16 +42,13 @@ ${watermark ? `<div class="watermark" aria-hidden>${escapeHtml(TRIAL_WATERMARK)}
 <table><thead><tr><th>Type</th><th>File</th><th>Uploaded</th><th>By</th><th>Summary</th></tr></thead>
 <tbody>${evidenceRows}</tbody></table>
 <p><em>Generated ${new Date().toLocaleString()} — LedgerStack. Use Print → Save as PDF.</em></p>
-${watermark ? `<p style="margin-top:2rem;font-size:12px;color:#666"><strong>${escapeHtml(TRIAL_WATERMARK)}</strong></p>` : ''}
-</div>
 </body></html>`
 }
 
 export async function buildPdfReport(
   claim: Record<string, unknown>,
   summary: string,
-  evidence: EvidenceRecord[],
-  watermark: boolean
+  evidence: EvidenceRecord[]
 ): Promise<ArrayBuffer | null> {
   try {
     const { jsPDF } = await import('jspdf')
@@ -113,13 +102,6 @@ export async function buildPdfReport(
 
     addLine('')
     addLine(`Generated ${new Date().toLocaleString()} — LedgerStack`)
-    if (watermark) {
-      y += 12
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(120, 120, 120)
-      addLine(TRIAL_WATERMARK)
-      doc.setTextColor(0, 0, 0)
-    }
 
     return doc.output('arraybuffer')
   } catch {
