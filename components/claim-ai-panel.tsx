@@ -1,7 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { JobIntelligenceSummary } from '@/components/job-intelligence-summary'
 import { LegalNotice } from '@/components/legal-notice'
+import type { JobIntelligenceReport } from '@/lib/job-intelligence-types'
 import { isUnlimited } from '@/lib/plan-entitlements'
 
 type TimelineEvent = {
@@ -107,7 +109,7 @@ export function ClaimAiPanel({
   aiSummariesLimit,
   aiSummariesUsed,
 }: ClaimAiPanelProps) {
-  const [summary, setSummary] = useState<string | null>(null)
+  const [report, setReport] = useState<JobIntelligenceReport | null>(null)
   const [events, setEvents] = useState<TimelineEvent[]>([])
   const [projectStatusEvents, setProjectStatusEvents] = useState<
     TimelineEvent[]
@@ -191,8 +193,8 @@ export function ClaimAiPanel({
     const payload = await res.json().catch(() => ({}))
     if (!res.ok) {
       setError(payload.error || 'Could not generate summary')
-    } else {
-      setSummary(payload.summary)
+    } else if (payload.report) {
+      setReport(payload.report as JobIntelligenceReport)
     }
     setLoadingSummary(false)
   }
@@ -281,13 +283,6 @@ export function ClaimAiPanel({
         <p className="text-sm alert-error rounded-lg p-2">{error}</p>
       )}
 
-      {summary && (
-        <div className="bg-surface border border-border rounded-xl p-3">
-          <p className="text-xs font-semibold text-muted mb-1">AI summary</p>
-          <p className="text-sm text-foreground leading-relaxed">{summary}</p>
-        </div>
-      )}
-
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-semibold text-foreground">Latest update</p>
@@ -372,6 +367,8 @@ export function ClaimAiPanel({
 
       <LegalNotice id="ai" />
       {(canExportPdf || canExportHtml) && <LegalNotice id="export-backup" />}
+
+      {report && <JobIntelligenceSummary report={report} />}
     </section>
   )
 }

@@ -8,57 +8,12 @@ export type TimelineEvent = {
   source: 'ai' | 'evidence' | 'manual'
 }
 
+/** @deprecated Use generateJobIntelligenceReport — kept for timeline helpers only */
 export async function generateClaimSummary(
   claim: Record<string, unknown>,
   evidence: EvidenceRecord[]
 ): Promise<string> {
-  const apiKey = process.env.GROQ_API_KEY
-  const fallback = buildFallbackSummary(claim, evidence)
-  if (!apiKey) return fallback
-
-  try {
-    const { default: Groq } = await import('groq-sdk')
-    const groq = new Groq({ apiKey })
-
-    const evidenceBlock = evidence
-      .slice(0, 40)
-      .map(
-        (e) =>
-          `- [${e.evidence_type}] ${e.file_name}: ${e.summary}${e.extracted_text ? `\n  Text: ${e.extracted_text.slice(0, 500)}` : ''}`
-      )
-      .join('\n')
-
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
-      temperature: 0.2,
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You write concise contractor job summaries for field projects. Use only facts from the data provided. 3-5 sentences.',
-        },
-        {
-          role: 'user',
-          content: `Claim:
-Client: ${claim.client_name}
-Property: ${claim.property_address}
-Loss: ${claim.loss_type}
-Insurer: ${claim.insurance_company}
-Claim #: ${claim.claim_number}
-Status: ${claim.status}
-Notes: ${claim.notes || 'none'}
-
-Evidence (${evidence.length} files):
-${evidenceBlock || '(none)'}`,
-        },
-      ],
-    })
-
-    return completion.choices?.[0]?.message?.content?.trim() || fallback
-  } catch (err) {
-    console.error('Claim summary failed:', err)
-    return fallback
-  }
+  return buildFallbackSummary(claim, evidence)
 }
 
 export async function generateClaimTimeline(

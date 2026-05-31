@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server'
-import { generateClaimSummary } from '@/lib/claim-ai'
-import { listEvidence } from '@/lib/evidence-storage'
+import {
+  generateJobIntelligenceReport,
+  reportToPlainText,
+} from '@/lib/job-intelligence-summary'
 import { consumeAiSummary } from '@/lib/plan-enforcement'
 import { getOrgPlanContext } from '@/lib/org-plan'
 import { requireAuth } from '@/lib/require-auth'
 
-export const maxDuration = 60
+export const maxDuration = 90
 
 export async function POST(req: Request) {
   try {
@@ -21,17 +23,6 @@ export async function POST(req: Request) {
         { error: 'claim_id and project_id required' },
         { status: 400 }
       )
-    }
-
-    const { data: claim, error } = await supabase
-      .from('claims')
-      .select('*')
-      .eq('id', claim_id)
-      .eq('project_id', project_id)
-      .maybeSingle()
-
-    if (error || !claim) {
-      return NextResponse.json({ error: 'Job not found' }, { status: 404 })
     }
 
     const { data: project } = await supabase
@@ -63,10 +54,20 @@ export async function POST(req: Request) {
       )
     }
 
-    const evidence = await listEvidence(supabase, project_id, claim_id)
-    const summary = await generateClaimSummary(claim, evidence)
+    const report = await generateJobIntelligenceReport(
+      supabase,
+      project_id,
+      claim_id
+    )
 
-    return NextResponse.json({ summary })
+    if (!report) {
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({
+      report,
+      summary: reportToPlainText(report),
+    })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Summary failed'
     return NextResponse.json({ error: message }, { status: 500 })

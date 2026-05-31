@@ -1,10 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import JSZip from 'jszip'
-import { buildFallbackSummary } from '@/lib/claim-ai'
 import {
-  buildHtmlReport,
-  buildPdfReport,
+  buildHtmlJobReport,
+  buildPdfJobReport,
 } from '@/lib/export-report-builders'
+import { gatherJobIntelligenceContext } from '@/lib/gather-job-intelligence'
+import {
+  buildFallbackReport,
+  reportToPlainText,
+} from '@/lib/job-intelligence-summary'
 import { listEvidence } from '@/lib/evidence-storage'
 import { listProjectStoragePaths } from '@/lib/list-project-storage'
 
@@ -198,7 +202,13 @@ export async function buildProjectArchiveZip(
     const evidence = await listEvidence(supabase, projectId, claim.id)
     appendJson(zip, `${base}/documents-index.json`, evidence)
 
-    const summary = buildFallbackSummary(claim, evidence)
+    const ctx = await gatherJobIntelligenceContext(
+      supabase,
+      projectId,
+      claim.id
+    )
+    const report = ctx ? buildFallbackReport(ctx) : null
+    const summary = report ? reportToPlainText(report) : ''
     zip.file(`${base}/ai-summary.txt`, summary)
 
     const intelligence = {
@@ -208,13 +218,15 @@ export async function buildProjectArchiveZip(
       timeline_entry_count: timeline.length,
       document_count: evidence.length,
       summary,
+      report,
     }
     appendJson(zip, `${base}/report-intelligence.json`, intelligence)
 
-    const html = buildHtmlReport(claim, summary, evidence)
-    zip.file(`${base}/report.html`, html)
+    if (report) {
+      zip.file(`${base}/report.html`, buildHtmlJobReport(report))
+    }
 
-    const pdfBytes = await buildPdfReport(claim, summary, evidence)
+    const pdfBytes = report ? await buildPdfJobReport(report) : null
     if (pdfBytes) {
       zip.file(`${base}/report.pdf`, pdfBytes)
     }

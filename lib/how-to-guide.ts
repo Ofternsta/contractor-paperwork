@@ -163,7 +163,7 @@ export const GUIDE_PARTS: GuidePart[] = [
         id: 'ai-export',
         title: 'Job intelligence, AI & exports',
         paragraphs: [
-          'The job intelligence panel (staff only, not clients) can generate an AI summary of the job, refresh an AI-built timeline, show status history, and export a PDF or HTML job packet. Exports start on Starter (PDF); full job packets and project archives are on Professional+.',
+          'The job intelligence panel (staff only, not clients) can generate a categorized AI project summary (status, timeline, messages, notes, calendar, documents), refresh an AI-built timeline, show status history, and export a formatted PDF or HTML report. Exports start on Starter (PDF); full job packets and project archives are on Professional+.',
           'Monthly AI usage is capped by plan and shown on project pages. Uploads can be auto-categorized and summarized; admins can re-scan a file, edit its summary, or move it to another category from the expanded file detail view.',
         ],
       },

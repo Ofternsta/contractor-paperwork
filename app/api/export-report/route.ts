@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server'
-import { generateClaimSummary } from '@/lib/claim-ai'
 import {
-  buildHtmlReport,
-  buildPdfReport,
+  buildHtmlJobReport,
+  buildPdfJobReport,
 } from '@/lib/export-report-builders'
-import { listEvidence } from '@/lib/evidence-storage'
+import { generateJobIntelligenceReport } from '@/lib/job-intelligence-summary'
 import { consumeAiSummary } from '@/lib/plan-enforcement'
 import { getOrgPlanContext } from '@/lib/org-plan'
 import { requireAuth } from '@/lib/require-auth'
 
-export const maxDuration = 60
+export const maxDuration = 90
 
 export async function GET(req: Request) {
   try {
@@ -28,17 +27,6 @@ export async function GET(req: Request) {
         { error: 'claim_id and project_id required' },
         { status: 400 }
       )
-    }
-
-    const { data: claim, error } = await supabase
-      .from('claims')
-      .select('*')
-      .eq('id', claimId)
-      .eq('project_id', projectId)
-      .maybeSingle()
-
-    if (error || !claim) {
-      return NextResponse.json({ error: 'Job not found' }, { status: 404 })
     }
 
     const { data: project } = await supabase
@@ -63,7 +51,6 @@ export async function GET(req: Request) {
       planCtx.entitlements.standardPdfExport ||
       planCtx.entitlements.claimPacketExport
 
-    const wantsPdf = format === 'pdf'
     if (!canExport) {
       return NextResponse.json(
         {
@@ -85,15 +72,23 @@ export async function GET(req: Request) {
       )
     }
 
-    const evidence = await listEvidence(supabase, projectId, claimId)
-    const summary = await generateClaimSummary(claim, evidence)
-    const safeName = `job-${claim.claim_number || claimId}`.replace(
+    const report = await generateJobIntelligenceReport(
+      supabase,
+      projectId,
+      claimId
+    )
+
+    if (!report) {
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+    }
+
+    const safeName = `project-report-${report.jobLabel}`.replace(
       /[^a-zA-Z0-9.-]/g,
       '_'
     )
 
     if (format === 'html') {
-      const html = buildHtmlReport(claim, summary, evidence)
+      const html = buildHtmlJobReport(report)
       return new NextResponse(html, {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
@@ -102,7 +97,7 @@ export async function GET(req: Request) {
       })
     }
 
-    const pdfBytes = await buildPdfReport(claim, summary, evidence)
+    const pdfBytes = await buildPdfJobReport(report)
 
     if (pdfBytes) {
       return new NextResponse(pdfBytes, {
@@ -113,7 +108,7 @@ export async function GET(req: Request) {
       })
     }
 
-    const html = buildHtmlReport(claim, summary, evidence)
+    const html = buildHtmlJobReport(report)
     return new NextResponse(html, {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
